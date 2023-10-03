@@ -18,6 +18,7 @@ import geopandas as gpd
 from datacube.utils.geometry import Geometry
 from deafrica_tools.spatial import xr_vectorize
 
+from deafrica_waterbodies.cli.io import write_waterbodies_to_file
 from deafrica_waterbodies.waterbodies.polygons.attributes import assign_unique_ids
 from deafrica_waterbodies.waterbodies.polygons.filters import filter_geodataframe_by_intersection, filter_waterbodies
 
@@ -111,8 +112,14 @@ def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
 
     """
     # Test whether the wetness threshold has been correctly set.
+    if len(minimum_wet_thresholds) != 2:
+        _log.error("The analysis requires two thresholds.")
+        error_msg = f'The threshold list contains {len(minimum_wet_thresholds)}.' \
+            'Please check the list and ensure it contains two values.' \
+            'The secondary threshold should be listed first, followed by the primary threshold. \n'
+        raise ValueError(error_msg)
 
-    if minimum_wet_thresholds[0] > minimum_wet_thresholds[-1]:
+    elif minimum_wet_thresholds[0] > minimum_wet_thresholds[-1]:
         _log.error("Primary threshold value is less than the secondary threshold.")
         error_msg = 'We will be running a hybrid wetness threshold. ' \
             'Please ensure that the primary threshold has a higher value than the ' \
@@ -125,7 +132,7 @@ def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
             f'polygons \n with {minimum_wet_thresholds[0]} set as the supplementary ' \
             'threshold, which will define the extent/shape of the waterbody polygons.**'
         return (print_msg)
-
+    
 
 def get_polygons_using_thresholds(
         input_gdf: gpd.GeoDataFrame,
@@ -135,6 +142,7 @@ def get_polygons_using_thresholds(
         min_valid_observations: int = 128,
         primary_threshold: float = 0.1,
         secondary_threshold: float = 0.05,
+        temp_dir: str = None,
         ) -> [gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Generate polygons by thresholding WOfS All Time Summary data.
@@ -238,10 +246,25 @@ def get_polygons_using_thresholds(
                 merged_polygons.crs = wofs_alltime_summary.geobox.crs
 
                 row_polygons[threshold] = merged_polygons
+                
+                if (temp_dir is not None) and (not merged_polygons.empty):
+                    write_waterbodies_to_file(
+                        merged_polygons,
+                        product_version="0.0.1",
+                        storage_location="local",
+                        output_bucket_name=None,
+                        output_local_folder=temp_dir,
+                        output_file_name=f"temp_{threshold}_{row_id}",
+                        output_file_type="GeoJSON",
+                    )
+                
 
             # Append the row's waterbody polygons to the list.
             primary_threshold_polygons_list.append(row_polygons[primary_threshold])
             secondary_threshold_polygons_list.append(row_polygons[secondary_threshold])
+            
+            
+            
         except Exception as error:
             _log.exception(error)
             _log.exception(
