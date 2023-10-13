@@ -235,14 +235,12 @@ def load_wofs_frequency(
     detection_threshold = min_wet_thresholds[-1]
 
     # Get the tile id and tile object.
-    tile_id = tile[0]
+    tile_id = tile[0]  # noqa F841
     tile_object = tile[1]
 
     # Load the WOfS All-Time Summary data for the tile and threshold the data
     # using the extent and the detection thresholds.
     try:
-        _log.info(f"Loading WOfS All-Time Summary data for tile {tile_id}")
-
         # Load the data for the tile.
         wofs_alltime_summary = grid_workflow.load(tile_object, dask_chunks=dask_chunks).squeeze()
 
