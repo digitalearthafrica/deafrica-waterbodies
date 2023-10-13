@@ -60,8 +60,8 @@ def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
         print_msg = (
             "We will be running a hybrid wetness threshold. \n"
             f"**You have set {detection_threshold} as the "
-            "primary threshold, which will define the location of the water body "
-            f"polygons \n with {extent_threshold} set as the supplementary "
+            "location threshold, which will define the location of the water body "
+            f"polygons \n with {extent_threshold} set as the extent "
             "threshold, which will define the extent/shape of the waterbody polygons.**"
         )
     return print_msg
