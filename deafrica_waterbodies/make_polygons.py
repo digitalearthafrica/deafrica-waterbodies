@@ -16,14 +16,15 @@ import datacube.model
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import scipy.ndimage as ndi
 import shapely
 import xarray as xr
 from datacube.testutils.io import rio_slurp_xarray
+from deafrica_tools.spatial import xr_vectorize
+from skimage import measure, morphology
+from skimage.segmentation import watershed
 
 from deafrica_waterbodies.filters import filter_by_intersection, filter_hydrosheds_land_mask
-
-# from deafrica_tools.spatial import xr_vectorize
-
 
 _log = logging.getLogger(__name__)
 
@@ -286,3 +287,194 @@ def load_wofs_frequency(
         raise error
     else:
         return valid_detection, valid_extent
+
+
+def remove_small_waterbodies(waterbody_raster: np.ndarray, min_size: int = 6) -> np.ndarray:
+    """
+    Remove water bodies from the raster that are smaller than the specified size.
+
+    Parameters
+    ----------
+    waterbody_raster : np.ndarray
+        Raster image to filter.
+    min_size : int, optional
+        The smallest allowable water body size, by default 6
+
+    Returns
+    -------
+    np.ndarray
+        Raster image with small waterbodies removed.
+    """
+
+    waterbodies_labelled = morphology.label(waterbody_raster, background=0)
+    waterbodies_small_removed = morphology.remove_small_objects(
+        waterbodies_labelled, min_size=min_size, connectivity=1
+    )
+
+    return waterbodies_small_removed
+
+
+# Need a step to only segment the largest objects
+# only segment bigger than minsize
+def select_waterbodies_for_segmentation(waterbodies_labelled: np.ndarray, min_size: int = 1000) -> np.ndarray:
+    """
+    Function to select the waterbodies to be segmented.
+    """
+
+    props = measure.regionprops(waterbodies_labelled)
+
+    labels_to_keep = []
+    for region_prop in props:
+        count = region_prop.num_pixels
+        label = region_prop.label
+
+        if count > min_size:
+            labels_to_keep.append(label)
+
+    segment_image = np.where(np.isin(waterbodies_labelled, labels_to_keep), 1, 0)
+
+    return segment_image
+
+
+def generate_segmentation_markers(marker_source: np.ndarray, erosion_radius: int = 1, min_size: int = 100) -> np.ndarray:
+    """
+    Function to create watershed segementation markers.
+    """
+    markers = morphology.erosion(marker_source, footprint=morphology.disk(radius=erosion_radius))
+    markers_relabelled = morphology.label(markers, background=0)
+
+    markers_acceptable_size = morphology.remove_small_objects(
+        markers_relabelled, min_size=min_size, connectivity=1
+    )
+
+    return markers_acceptable_size
+
+
+def run_watershed(waterbodies_for_segementation: np.ndarray, segmentation_markers):
+    """
+    Run segmentation
+    """
+    distance = ndi.distance_transform_edt(waterbodies_for_segementation)
+    segmented = watershed(-distance, segmentation_markers, mask=waterbodies_for_segementation)
+
+    return segmented
+
+
+def confirm_extent_contains_detection(extent, detection):
+    def sum_intensity(regionmask, intensity_image):
+        return np.sum(intensity_image[regionmask])
+
+    props = measure.regionprops(
+        extent, intensity_image=detection, extra_properties=(sum_intensity,)
+    )
+
+    labels_to_keep = []
+    for region_prop in props:
+        detection_count = region_prop.sum_intensity
+        label = region_prop.label
+
+        if detection_count > 0:
+            labels_to_keep.append(label)
+
+    extent_keep = np.where(np.isin(extent, labels_to_keep), extent, 0)
+
+    return extent_keep
+
+
+def process_raster_polygons(
+    tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
+    grid_workflow: datacube.api.GridWorkflow,
+    dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
+    resolution: tuple[int, int] = (-30, 30),
+    output_crs: str = "EPSG:6933",
+    min_valid_observations: int = 128,
+    minimum_wet_thresholds: list[int | float] = [0.05, 0.1],
+    land_sea_mask_fp: str | Path = "",
+    filter_land_sea_mask: Callable = filter_hydrosheds_land_mask,
+) -> gpd.GeoDataFrame:
+    """
+    Generate water body polygons by thresholding a WOfS All Time Summary tile.
+
+    Parameters
+    ----------
+    tile : tuple[tuple[int,int], datacube.api.grid_workflow.Tile]
+        The WOfS All Time Summary Tile object for which to
+        generate waterbody polygons for.
+    grid_workflow: datacube.api.GridWorkflow,
+        Grid Workflow used to generate the tiles and to be used to load the Tile object.
+    dask_chunks : dict, optional
+        dask_chunks to use to load WOfS data, by default {"x": 3200, "y": 3200, "time": 1}
+    min_valid_observations : int, optional
+        Threshold to use to mask out pixels based on the number of valid WOfS
+        observations for each pixel, by default 128
+    minimum_wet_thresholds: list[int | float], optional
+        A list containing the extent threshold and the detection threshold, with
+        the extent threshold listed first, by default [0.05, 0.1]
+    land_sea_mask_fp: str | Path, optional
+        File path to raster to use to mask ocean pixels in WOfS data, by default ""
+    resampling_method: str, optional
+        Resampling method to use when loading the land sea mask raster, by default "bilinear"
+    filter_land_sea_mask: Callable, optional
+        Function to apply to the land sea mask xr.DataArray to generate a boolean
+        mask where pixels with a value of True are land pixels and pixels with a
+        value of False are ocean pixels, by default `filter_hydrosheds_land_mask`
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Water body polygons.    
+    """
+    # Load and threshold the WOfS All Time Summary tile.
+    xr_detection, xr_extent = load_wofs_frequency(
+        tile=tile,
+        grid_workflow=grid_workflow,
+        dask_chunks=dask_chunks,
+        min_valid_observations=min_valid_observations,
+        minimum_wet_thresholds=minimum_wet_thresholds,
+        land_sea_mask_fp=land_sea_mask_fp,
+        filter_land_sea_mask=filter_hydrosheds_land_mask,
+    )
+
+    # Convert to numpy arrays for image processing.
+    np_detection = xr_detection.to_numpy().astype(int)
+    np_extent = xr_extent.to_numpy().astype(int)
+
+    # Remove any objects of size 5 or less, as measured by connectivity=1
+    np_extent_small_removed = remove_small_waterbodies(np_extent, min_size=6)
+
+    # Identify waterbodies to apply segmentation to
+    np_extent_segment = select_waterbodies_for_segmentation(np_extent_small_removed, min_size=1000)
+    np_extent_nosegment = np.where(np_extent_segment > 0, 0, np_extent_small_removed)
+
+    # Create watershed segementation markers by taking the detection threshold pixels and eroding them by 1
+    # Includes removal of any markers smaller than 100 pixels
+    segmentation_markers = generate_segmentation_markers(
+        np_detection, erosion_radius=1, min_size=100
+    )
+
+    # Run segmentation
+    np_segmented_extent = run_watershed(np_extent_segment, segmentation_markers)
+
+    # Combine segmented and non segmented back together
+    np_combined_extent = np.where(np_segmented_extent > 0, np_segmented_extent, np_extent_nosegment)
+
+    # Only keep extent areas that contain a detection pixel
+    np_combined_extent_contains_detection = confirm_extent_contains_detection(
+        np_combined_extent, np_detection
+    )
+
+    # Relabel and remove small objects
+    np_combined_clean_label = remove_small_waterbodies(
+        np_combined_extent_contains_detection, min_size=6
+    )
+
+    # Convert back to xarray
+    xr_combined_extent = xr.DataArray(
+        np_combined_clean_label, coords=xr_extent.coords, dims=xr_extent.dims, attrs=xr_extent.attrs
+    )
+
+    # Vectorize
+    vector_combined_extent = xr_vectorize(
+        xr_combined_extent, crs=output_crs, mask=xr_combined_extent.values > 0
+    )
+
+    return vector_combined_extent
