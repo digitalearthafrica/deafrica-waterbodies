@@ -389,7 +389,6 @@ def process_raster_polygons(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
-    output_crs: str = "EPSG:6933",
     min_valid_observations: int = 128,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
@@ -407,8 +406,6 @@ def process_raster_polygons(
         Grid Workflow used to generate the tiles and to be used to load the Tile object.
     dask_chunks : dict, optional
         dask_chunks to use to load WOfS data, by default {"x": 3200, "y": 3200, "time": 1}
-    output_crs : str, optional
-        CRS to write the waterbody polygons to.
     min_valid_observations : int, optional
         Threshold to use to mask out pixels based on the number of valid WOfS
         observations for each pixel, by default 128
@@ -438,6 +435,13 @@ def process_raster_polygons(
         land_sea_mask_fp=land_sea_mask_fp,
         filter_land_sea_mask=filter_land_sea_mask,
     )
+
+    # Get the crs.
+    try:
+        output_crs = xr_detection.geobox.crs
+    except Exception as error:
+        _log.exception(error)
+        output_crs = xr_extent.geobox.crs
 
     # Convert to numpy arrays for image processing.
     np_detection = xr_detection.to_numpy().astype(int)
