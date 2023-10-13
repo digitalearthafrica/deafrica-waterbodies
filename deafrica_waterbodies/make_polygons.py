@@ -25,65 +25,50 @@ from deafrica_waterbodies.filters import filter_by_intersection, filter_hydroshe
 _log = logging.getLogger(__name__)
 
 
-def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
+def set_wetness_thresholds(
+    detection_threshold: int | float = 0.1, extent_threshold: int | float = 0.05
+) -> list:
     """
-    Function to validate the wetness thresholds.
+    Function to set and validate the minimum frequency for water a pixel must have
+    to be included.
 
     Parameters
     ----------
-    minimum_wet_thresholds : list
-        A list containing the extent and detection thresholds, with the extent
-        threshold listed first.
-        The location of water body polygons is set by the detection threshold,
-        but the shape/exent of the water body polygons is set by the extent threshold.
+    detection_threshold : int | float
+        Threshold used to set the location of the water body polygons.
+    extent_threshold : int | float
+        Threshold used to set the shape/extent of the water body polygons.
 
     Returns
     -------
-    str
-        Validation message
-
+    list
+        A list containing the extent and detection thresholds with the extent
+        threshold listed first.
     """
-    assert 0 < len(minimum_wet_thresholds) <= 2
-
-    extent_threshold = minimum_wet_thresholds[0]
-    detection_threshold = minimum_wet_thresholds[-1]
-
     # Check for correct value type.
-    assert extent_threshold is not None
     assert detection_threshold is not None
-
-    assert isinstance(extent_threshold, float) or isinstance(extent_threshold, int)
+    assert extent_threshold is not None
     assert isinstance(detection_threshold, float) or isinstance(detection_threshold, int)
+    assert isinstance(extent_threshold, float) or isinstance(extent_threshold, int)
 
-    if len(minimum_wet_thresholds) == 2:
-        if extent_threshold > detection_threshold:
-            _log.error(
-                f"""Detection threshold {detection_threshold} is less than
-                       the extent threshold {extent_threshold}."""
-            )
-            error_msg = """We will be running a hybrid wetness threshold. Please
-            ensure that the detection threshold has a higher value than the
-            extent threshold."""
-            raise ValueError(error_msg)
-        elif extent_threshold == detection_threshold:
-            _log.error(
-                f"""Detection threshold {detection_threshold} is equal to
-                       the extent threshold {extent_threshold}."""
-            )
-            error_msg = """We will be running a hybrid wetness threshold. Please
-            ensure that the detection threshold has a higher value than the extent threshold."""
-            raise ValueError(error_msg)
-        else:
-            print_msg = f"""We will be running a hybrid wetness threshold. You have
-            set {detection_threshold} as the location threshold, which will define
-            the location of the water body polygons and set {extent_threshold}
-            as the extent threshold, which will define the extent/shape of the waterbody polygons."""
+    # Check values.
+    assert 0 <= detection_threshold <= 1
+    assert 0 <= extent_threshold <= 1
+
+    if extent_threshold > detection_threshold:
+        _log.error(
+            f"Detection threshold {detection_threshold} is less than the extent threshold {extent_threshold}."
+        )
+        error_msg = """We will be running a hybrid wetness threshold.
+        Please ensure that the detection threshold has a higher value than the extent threshold."""
+        raise ValueError(error_msg)
     else:
-        print_msg = f"""You have not set up the hybrid threshold option. If you
-        meant to use this option, please set this option by including two wetness thresholds.
-        The wetness threshold we will use is {detection_threshold}"""
-
-    return print_msg
+        _log.info(
+            f"""We will be running a hybrid wetness threshold.
+        You have set {detection_threshold} as the location threshold, which will define the location of the water body polygons.
+        You have set {extent_threshold} as the extent threshold, which will define the extent/shape of the water body polygons."""
+        )
+        return [extent_threshold, detection_threshold]
 
 
 def merge_polygons_at_dataset_boundaries(waterbody_polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
