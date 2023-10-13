@@ -190,7 +190,7 @@ def load_wofs_frequency(
     grid_workflow: datacube.api.GridWorkflow,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
     min_valid_observations: int = 128,
-    minimum_wet_thresholds: list[int | float] = [0.05, 0.1],
+    min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
     resampling_method: str = "bilinear",
     filter_land_sea_mask: Callable = filter_hydrosheds_land_mask,
@@ -211,7 +211,7 @@ def load_wofs_frequency(
     min_valid_observations : int, optional
         Threshold to use to mask out pixels based on the number of valid WOfS
         observations for each pixel, by default 128
-    minimum_wet_thresholds: list[int | float], optional
+    min_wet_thresholds: list[int | float], optional
         A list containing the extent threshold and the detection threshold, with
         the extent threshold listed first, by default [0.05, 0.1]
     land_sea_mask_fp: str | Path, optional
@@ -231,8 +231,8 @@ def load_wofs_frequency(
 
     """
     # Set up the detection and extent thresholds.
-    extent_threshold = minimum_wet_thresholds[0]
-    detection_threshold = minimum_wet_thresholds[-1]
+    extent_threshold = min_wet_thresholds[0]
+    detection_threshold = min_wet_thresholds[-1]
 
     # Get the tile id and tile object.
     tile_id = tile[0]
@@ -316,7 +316,9 @@ def remove_small_waterbodies(waterbody_raster: np.ndarray, min_size: int = 6) ->
 
 # Need a step to only segment the largest objects
 # only segment bigger than minsize
-def select_waterbodies_for_segmentation(waterbodies_labelled: np.ndarray, min_size: int = 1000) -> np.ndarray:
+def select_waterbodies_for_segmentation(
+    waterbodies_labelled: np.ndarray, min_size: int = 1000
+) -> np.ndarray:
     """
     Function to select the waterbodies to be segmented.
     """
@@ -336,7 +338,9 @@ def select_waterbodies_for_segmentation(waterbodies_labelled: np.ndarray, min_si
     return segment_image
 
 
-def generate_segmentation_markers(marker_source: np.ndarray, erosion_radius: int = 1, min_size: int = 100) -> np.ndarray:
+def generate_segmentation_markers(
+    marker_source: np.ndarray, erosion_radius: int = 1, min_size: int = 100
+) -> np.ndarray:
     """
     Function to create watershed segementation markers.
     """
@@ -385,10 +389,9 @@ def process_raster_polygons(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
-    resolution: tuple[int, int] = (-30, 30),
     output_crs: str = "EPSG:6933",
     min_valid_observations: int = 128,
-    minimum_wet_thresholds: list[int | float] = [0.05, 0.1],
+    min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
     filter_land_sea_mask: Callable = filter_hydrosheds_land_mask,
 ) -> gpd.GeoDataFrame:
@@ -404,10 +407,12 @@ def process_raster_polygons(
         Grid Workflow used to generate the tiles and to be used to load the Tile object.
     dask_chunks : dict, optional
         dask_chunks to use to load WOfS data, by default {"x": 3200, "y": 3200, "time": 1}
+    output_crs : str, optional
+        CRS to write the waterbody polygons to.
     min_valid_observations : int, optional
         Threshold to use to mask out pixels based on the number of valid WOfS
         observations for each pixel, by default 128
-    minimum_wet_thresholds: list[int | float], optional
+    min_wet_thresholds: list[int | float], optional
         A list containing the extent threshold and the detection threshold, with
         the extent threshold listed first, by default [0.05, 0.1]
     land_sea_mask_fp: str | Path, optional
@@ -421,7 +426,7 @@ def process_raster_polygons(
     Returns
     -------
     gpd.GeoDataFrame
-        Water body polygons.    
+        Water body polygons.
     """
     # Load and threshold the WOfS All Time Summary tile.
     xr_detection, xr_extent = load_wofs_frequency(
@@ -429,7 +434,7 @@ def process_raster_polygons(
         grid_workflow=grid_workflow,
         dask_chunks=dask_chunks,
         min_valid_observations=min_valid_observations,
-        minimum_wet_thresholds=minimum_wet_thresholds,
+        min_wet_thresholds=min_wet_thresholds,
         land_sea_mask_fp=land_sea_mask_fp,
         filter_land_sea_mask=filter_land_sea_mask,
     )
