@@ -431,7 +431,7 @@ def process_raster_polygons(
         min_valid_observations=min_valid_observations,
         minimum_wet_thresholds=minimum_wet_thresholds,
         land_sea_mask_fp=land_sea_mask_fp,
-        filter_land_sea_mask=filter_hydrosheds_land_mask,
+        filter_land_sea_mask=filter_land_sea_mask,
     )
 
     # Convert to numpy arrays for image processing.
