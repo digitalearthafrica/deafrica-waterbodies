@@ -52,8 +52,8 @@ def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
     assert extent_threshold is not None
     assert detection_threshold is not None
 
-    assert type(extent_threshold) is float or int
-    assert type(detection_threshold) is float or int
+    assert isinstance(extent_threshold, float) or isinstance(extent_threshold, int)
+    assert isinstance(detection_threshold, float) or isinstance(detection_threshold, int)
 
     if len(minimum_wet_thresholds) == 2:
         if extent_threshold > detection_threshold:
