@@ -32,8 +32,10 @@ def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
     Parameters
     ----------
     minimum_wet_thresholds : list
-        A list containing the primary and secondary thresholds, with the secondary
+        A list containing the extent and detection thresholds, with the extent
         threshold listed first.
+        The location of water body polygons is set by the detection threshold,
+        but the shape/exent of the water body polygons is set by the extent threshold.
 
     Returns
     -------
@@ -41,25 +43,28 @@ def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
         Validation message
 
     """
-    # Test whether the wetness threshold has been correctly set.
+    extent_threshold = minimum_wet_thresholds[0]
+    detection_threshold = minimum_wet_thresholds[-1]
 
-    if minimum_wet_thresholds[0] > minimum_wet_thresholds[-1]:
-        _log.error("Primary threshold value is less than the secondary threshold.")
+    if extent_threshold > detection_threshold:
+        _log.error(
+            f"Detection threshold {detection_threshold} is less than the extent threshold {extent_threshold}."
+        )
         error_msg = (
             "We will be running a hybrid wetness threshold. "
-            "Please ensure that the primary threshold has a higher value than the "
-            "secondary threshold. \n"
+            "Please ensure that the detection threshold has a higher value than the "
+            "extent threshold. \n"
         )
         raise ValueError(error_msg)
     else:
         print_msg = (
             "We will be running a hybrid wetness threshold. \n"
-            f"**You have set {minimum_wet_thresholds[-1]} as the "
-            "primary threshold, which will define the location of the waterbody "
-            f"polygons \n with {minimum_wet_thresholds[0]} set as the supplementary "
+            f"**You have set {detection_threshold} as the "
+            "primary threshold, which will define the location of the water body "
+            f"polygons \n with {extent_threshold} set as the supplementary "
             "threshold, which will define the extent/shape of the waterbody polygons.**"
         )
-        return print_msg
+    return print_msg
 
 
 def merge_polygons_at_dataset_boundaries(waterbody_polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
