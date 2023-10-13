@@ -58,32 +58,26 @@ def check_wetness_thresholds(minimum_wet_thresholds: list) -> str:
     if len(minimum_wet_thresholds) == 2:
         if extent_threshold > detection_threshold:
             _log.error(
-                f"Detection threshold {detection_threshold} is less than the extent threshold {extent_threshold}."
+                f"""Detection threshold {detection_threshold} is less than
+                       the extent threshold {extent_threshold}."""
             )
-            error_msg = (
-                "We will be running a hybrid wetness threshold. "
-                "Please ensure that the detection threshold has a higher value than the "
-                "extent threshold. \n"
-            )
+            error_msg = """We will be running a hybrid wetness threshold. Please
+            ensure that the detection threshold has a higher value than the
+            extent threshold."""
             raise ValueError(error_msg)
         elif extent_threshold == detection_threshold:
             _log.error(
-                f"Detection threshold {detection_threshold} is equal to the extent threshold {extent_threshold}."
+                f"""Detection threshold {detection_threshold} is equal to
+                       the extent threshold {extent_threshold}."""
             )
-            error_msg = (
-                "We will be running a hybrid wetness threshold. "
-                "Please ensure that the detection threshold has a higher value than the "
-                "extent threshold. \n"
-            )
+            error_msg = """We will be running a hybrid wetness threshold. Please
+            ensure that the detection threshold has a higher value than the extent threshold."""
             raise ValueError(error_msg)
         else:
-            print_msg = (
-                "We will be running a hybrid wetness threshold. \n"
-                f"**You have set {detection_threshold} as the "
-                "location threshold, which will define the location of the water body "
-                f"polygons \n with {extent_threshold} set as the extent "
-                "threshold, which will define the extent/shape of the waterbody polygons.**"
-            )
+            print_msg = f"""We will be running a hybrid wetness threshold. You have
+            set {detection_threshold} as the location threshold, which will define
+            the location of the water body polygons and set {extent_threshold}
+            as the extent threshold, which will define the extent/shape of the waterbody polygons."""
     else:
         print_msg = f"""You have not set up the hybrid threshold option. If you
         meant to use this option, please set this option by including two wetness thresholds.
