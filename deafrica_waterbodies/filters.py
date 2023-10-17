@@ -491,12 +491,18 @@ def split_large_polygons(
             ]
 
             if len(splittable_polygons) >= 1:
+                _log.info(f"Splitting {len(splittable_polygons)} polygons.")
+
+                _log.debug("Buffering ...")
                 splittable_polygons_buffered = splittable_polygons.buffer(-100)
                 splittable_polygons_buffered = splittable_polygons_buffered.buffer(125)
 
+                _log.debug("Union ...")
                 splittable_polygons_buffered_union = gpd.GeoDataFrame(
                     geometry=[splittable_polygons_buffered.unary_union], crs=crs
                 )
+
+                _log.debug("First overlay ...")
                 subtracted = (
                     gpd.overlay(
                         splittable_polygons, splittable_polygons_buffered_union, how="difference"
@@ -504,6 +510,8 @@ def split_large_polygons(
                     .explode(index_parts=True)
                     .reset_index(drop=True)
                 )
+
+                _log.debug("Second overlay...")
                 resubtracted = (
                     gpd.overlay(splittable_polygons, subtracted, how="difference")
                     .explode(index_parts=True)
@@ -512,6 +520,7 @@ def split_large_polygons(
 
                 # Assign each chopped-off bit of the polygon to its nearest big
                 # neighbour.
+                _log.debug("Assigning chopped off bits to nearest neighbour ...")
                 unassigned = np.ones(len(subtracted), dtype=bool)
                 recombined = []
 
@@ -527,6 +536,8 @@ def split_large_polygons(
                 recombined_gdf_masked = recombined_gdf[
                     ~(recombined_gdf.geometry.is_empty | recombined_gdf.geometry.isna())
                 ]
+
+                _log.debug("Recombine polygons...")
                 # All remaining polygons are not part of a big polygon.
                 results = pd.concat(
                     [recombined_gdf_masked, subtracted[unassigned], not_splittable_polygons],
