@@ -412,7 +412,7 @@ def pp_test_gdf(input_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 
 def split_large_polygons(
-    waterbody_polygons: gpd.GeoDataFrame, pp_thresh: float = 0.005, method: str = "nothing"
+    waterbody_polygons: gpd.GeoDataFrame, pp_test_threshold: float = 0.005, method: str = "nothing"
 ) -> gpd.GeoDataFrame:
     """
     Function to split large polygons.
@@ -459,11 +459,15 @@ def split_large_polygons(
         return waterbody_polygons_
     else:
         _log.info(
-            f"Splitting large polygons using the `{method}` method, using the threshold {pp_thresh}."
+            f"Splitting large polygons using the `{method}` method, using the threshold {pp_test_threshold}."
         )
         if method == "erode-dilate-v1":
-            splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test <= pp_thresh]
-            not_splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test > pp_thresh]
+            splittable_polygons = waterbody_polygons_[
+                waterbody_polygons_.pp_test <= pp_test_threshold
+            ]
+            not_splittable_polygons = waterbody_polygons_[
+                waterbody_polygons_.pp_test > pp_test_threshold
+            ]
 
             splittable_polygons_buffered = splittable_polygons.buffer(-50)
             split_polygons = (
@@ -479,8 +483,12 @@ def split_large_polygons(
             )
             return large_polygons_handled
         elif method == "erode-dilate-v2":
-            splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test <= pp_thresh]
-            not_splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test > pp_thresh]
+            splittable_polygons = waterbody_polygons_[
+                waterbody_polygons_.pp_test <= pp_test_threshold
+            ]
+            not_splittable_polygons = waterbody_polygons_[
+                waterbody_polygons_.pp_test > pp_test_threshold
+            ]
 
             if len(splittable_polygons) >= 1:
                 splittable_polygons_buffered = splittable_polygons.buffer(-100)
@@ -531,7 +539,7 @@ def split_large_polygons(
                 return large_polygons_handled
             else:
                 info_msg = (
-                    f"There are no polygons with a Polsby–Popper score above the {pp_thresh}. "
+                    f"There are no polygons with a Polsby–Popper score above the {pp_test_threshold}. "
                     "No polygons were split."
                 )
                 _log.info(info_msg)
@@ -621,7 +629,7 @@ def filter_waterbodies(
 
     large_polygons_handled = split_large_polygons(
         waterbody_polygons=major_rivers_filtered_polygons,
-        pp_thresh=pp_test_threshold,
+        pp_test_threshold=pp_test_threshold,
         method=handle_large_polygons,
     )
 
