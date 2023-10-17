@@ -30,6 +30,7 @@ dependencies = [
     'botocore',
     'click',
     'datacube',
+    'dask_geopandas',
     'deafrica-tools >= 2.1.2',
     'fsspec',
     'gdal',

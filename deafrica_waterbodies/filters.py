@@ -6,6 +6,7 @@ import math
 import warnings
 from pathlib import Path
 
+import dask_geopandas
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -411,6 +412,171 @@ def pp_test_gdf(input_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return input_gdf
 
 
+def erode_dilate_v1(
+    waterbody_polygons: gpd.GeoDataFrame, pp_test_threshold: float | int
+) -> gpd.GeoDataFrame:
+    """
+    Split large polygons using the `erode-dilate-v1` method.
+
+    Parameters
+    ----------
+    waterbody_polygons : gpd.GeoDataFrame
+        Polygons to split.
+    pp_test_threshold: float | int
+        Polsby–Popper value threshold below which a polygon is a candidate for
+        splitting.
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Polygons with polygons below the threshold split.
+    """
+    crs = waterbody_polygons.crs
+    assert crs.is_projected
+
+    # Calculate the Polsby–Popper values.
+    waterbody_polygons_ = pp_test_gdf(input_gdf=waterbody_polygons)
+
+    # Get the polygons to be split.
+    splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test <= pp_test_threshold]
+    not_splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test > pp_test_threshold]
+
+    if len(splittable_polygons) >= 1:
+        _log.info(f"Splitting {len(splittable_polygons)} polygons.")
+
+        # Buffer the polygons.
+        splittable_polygons_buffered = splittable_polygons.buffer(-50)
+
+        # Explode multi-part geometries into multiple single geometries.
+        split_polygons = splittable_polygons_buffered.explode(index_parts=True).reset_index(
+            drop=True
+        )
+
+        # Buffer the polygons.
+        split_polygons_buffered = split_polygons.buffer(50)
+
+        # Convert to a GeoDataFrame.
+        split_polygons_gdf = gpd.GeoDataFrame(geometry=split_polygons_buffered, crs=crs)
+        split_polygons_gdf = pp_test_gdf(input_gdf=split_polygons_gdf)
+
+        large_polygons_handled = pd.concat(
+            [not_splittable_polygons, split_polygons_gdf], ignore_index=True
+        )
+
+        _log.info(
+            f"Polygon count after splitting using erode-dilate-v1 method: {len(large_polygons_handled)}"
+        )
+        return large_polygons_handled
+    else:
+        info_msg = (
+            f"There are no polygons with a Polsby–Popper score above the {pp_test_threshold}. "
+            "No polygons were split."
+        )
+        _log.info(info_msg)
+        return waterbody_polygons_
+
+
+def erode_dilate_v2(
+    waterbody_polygons: gpd.GeoDataFrame, pp_test_threshold: float | int
+) -> gpd.GeoDataFrame:
+    """
+    Split large polygons using the `erode-dilate-v2` method.
+
+    Parameters
+    ----------
+    waterbody_polygons : gpd.GeoDataFrame
+        Polygons to split.
+    pp_test_threshold: float | int
+        Polsby–Popper value threshold below which a polygon is a candidate for
+        splitting.
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Polygons with polygons below the threshold split.
+    """
+    crs = waterbody_polygons.crs
+    assert crs.is_projected
+
+    # Calculate the Polsby–Popper values.
+    waterbody_polygons_ = pp_test_gdf(input_gdf=waterbody_polygons)
+
+    # Get the polygons to be split.
+    splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test <= pp_test_threshold]
+    not_splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test > pp_test_threshold]
+
+    if len(splittable_polygons) >= 1:
+        _log.info(f"Splitting {len(splittable_polygons)} polygons.")
+
+        # Repartition the GeoPandas dataframe into a  Dask-GeoPandas dataframe:
+        splittable_polygons_ = dask_geopandas.from_geopandas(splittable_polygons, npartitions=5)
+
+        # Shuffle the data into spatially consistent partitions.
+        # i.e. geometries that are spatially near each other will be within the same partition.
+        splittable_polygons_ = splittable_polygons_.spatial_shuffle()
+
+        # Buffer the polygons.
+        splittable_polygons_buffered = splittable_polygons_.buffer(-100).buffer(125)
+
+        # Get the union of all the buffered polygons as a single geometry,
+        # same as using an empty dissolve.
+        splittable_polygons_buffered_union = splittable_polygons_buffered.unary_union
+
+        # Get the difference of each geometry in the splittable_polygons_ and the single geometry in
+        # splittable_polygons_buffered_union
+        subtracted = splittable_polygons_.difference(splittable_polygons_buffered_union)
+
+        # Compute the subtracted.
+        subtracted = subtracted.compute()
+
+        # Explode multi-part geometries into multiple single geometries.
+        subtracted = subtracted.explode(index_parts=True).reset_index(drop=True)
+
+        # Get the difference of each geometry in subtracted and each geometry in splittable_polygons.
+        resubtracted = splittable_polygons.overlay(subtracted, how="difference")
+
+        # Explode multi-part geometries into multiple single geometries.
+        resubtracted = resubtracted.explode(index_parts=True).reset_index(drop=True)
+
+        # Assign each chopped-off bit of the polygon to its nearest big
+        # neighbour.
+        unassigned = np.ones(len(subtracted), dtype=bool)
+        recombined = []
+
+        for row in resubtracted.itertuples():
+            mask = subtracted.exterior.intersects(row.geometry.exterior) & unassigned
+            neighbours = subtracted[mask]
+            unassigned[mask] = False
+            poly = row.geometry.union(neighbours.unary_union)
+            recombined.append(poly)
+
+        recombined_gdf = gpd.GeoDataFrame(geometry=recombined, crs=crs)
+        # Get only the actual geometry objects that are neither missing nor empty
+        recombined_gdf_masked = recombined_gdf[
+            ~(recombined_gdf.geometry.is_empty | recombined_gdf.geometry.isna())
+        ]
+
+        # All remaining polygons are not part of a big polygon.
+        results = pd.concat(
+            [recombined_gdf_masked, subtracted[unassigned], not_splittable_polygons],
+            ignore_index=True,
+        )
+
+        results = pp_test_gdf(input_gdf=results)
+
+        large_polygons_handled = results.explode(index_parts=True).reset_index(drop=True)
+
+        _log.info(
+            f"Polygon count after splitting using erode-dilate-v2 method: {len(large_polygons_handled)}"
+        )
+        return large_polygons_handled
+    else:
+        info_msg = (
+            f"There are no polygons with a Polsby–Popper score above the {pp_test_threshold}. "
+            "No polygons were split."
+        )
+        _log.info(info_msg)
+        return waterbody_polygons_
+
+
 def split_large_polygons(
     waterbody_polygons: gpd.GeoDataFrame, pp_test_threshold: float = 0.005, method: str = "nothing"
 ) -> gpd.GeoDataFrame:
@@ -421,9 +587,9 @@ def split_large_polygons(
     ----------
     waterbody_polygons : gpd.GeoDataFrame
         Set of polygons for which to split the large polygons.
-    pp_thresh : float, optional
+    pp_test_threshold : float, optional
         Threshold for the Polsby–Popper test values of the polygons by which to
-        classify is a polygon is large or not, by default 0.005
+        classify if a polygon is large or not, by default 0.005
     method : str, optional
         Method to use to split large polygons., by default "nothing"
 
@@ -443,12 +609,6 @@ def split_large_polygons(
         )
         method = "nothing"
 
-    crs = waterbody_polygons.crs
-    assert crs.is_projected
-
-    # Calculate the Polsby–Popper values.
-    waterbody_polygons_ = pp_test_gdf(input_gdf=waterbody_polygons)
-
     # Split large polygons.
     if method == "nothing":
         info_msg = (
@@ -456,105 +616,22 @@ def split_large_polygons(
             f"select one of the following methods: {valid_options[:2]}."
         )
         _log.info(info_msg)
+        waterbody_polygons_ = pp_test_gdf(waterbody_polygons)
         return waterbody_polygons_
     else:
         _log.info(
             f"Splitting large polygons using the `{method}` method, using the threshold {pp_test_threshold}."
         )
         if method == "erode-dilate-v1":
-            splittable_polygons = waterbody_polygons_[
-                waterbody_polygons_.pp_test <= pp_test_threshold
-            ]
-            not_splittable_polygons = waterbody_polygons_[
-                waterbody_polygons_.pp_test > pp_test_threshold
-            ]
-
-            splittable_polygons_buffered = splittable_polygons.buffer(-50)
-            split_polygons = (
-                splittable_polygons_buffered.explode(index_parts=True)
-                .reset_index(drop=True)
-                .buffer(50)
-            )
-            split_polygons_gdf = gpd.GeoDataFrame(geometry=split_polygons, crs=crs)
-            split_polygons_gdf = pp_test_gdf(input_gdf=split_polygons_gdf)
-
-            large_polygons_handled = pd.concat(
-                [not_splittable_polygons, split_polygons_gdf], ignore_index=True
+            large_polygons_handled = erode_dilate_v1(
+                waterbody_polygons=waterbody_polygons, pp_test_threshold=pp_test_threshold
             )
             return large_polygons_handled
         elif method == "erode-dilate-v2":
-            splittable_polygons = waterbody_polygons_[
-                waterbody_polygons_.pp_test <= pp_test_threshold
-            ]
-            not_splittable_polygons = waterbody_polygons_[
-                waterbody_polygons_.pp_test > pp_test_threshold
-            ]
-
-            if len(splittable_polygons) >= 1:
-                _log.info(f"Splitting {len(splittable_polygons)} polygons.")
-
-                _log.debug("Buffering ...")
-                splittable_polygons_buffered = splittable_polygons.buffer(-100)
-                splittable_polygons_buffered = splittable_polygons_buffered.buffer(125)
-
-                _log.debug("Union ...")
-                splittable_polygons_buffered_union = gpd.GeoDataFrame(
-                    geometry=[splittable_polygons_buffered.unary_union], crs=crs
-                )
-
-                _log.debug("First overlay ...")
-                subtracted = (
-                    gpd.overlay(
-                        splittable_polygons, splittable_polygons_buffered_union, how="difference"
-                    )
-                    .explode(index_parts=True)
-                    .reset_index(drop=True)
-                )
-
-                _log.debug("Second overlay...")
-                resubtracted = (
-                    gpd.overlay(splittable_polygons, subtracted, how="difference")
-                    .explode(index_parts=True)
-                    .reset_index(drop=True)
-                )
-
-                # Assign each chopped-off bit of the polygon to its nearest big
-                # neighbour.
-                _log.debug("Assigning chopped off bits to nearest neighbour ...")
-                unassigned = np.ones(len(subtracted), dtype=bool)
-                recombined = []
-
-                for row in resubtracted.itertuples():
-                    mask = subtracted.exterior.intersects(row.geometry.exterior) & unassigned
-                    neighbours = subtracted[mask]
-                    unassigned[mask] = False
-                    poly = row.geometry.union(neighbours.unary_union)
-                    recombined.append(poly)
-
-                recombined_gdf = gpd.GeoDataFrame(geometry=recombined, crs=crs)
-                # Get only the actual geometry objects that are neither missing nor empty
-                recombined_gdf_masked = recombined_gdf[
-                    ~(recombined_gdf.geometry.is_empty | recombined_gdf.geometry.isna())
-                ]
-
-                _log.debug("Recombine polygons...")
-                # All remaining polygons are not part of a big polygon.
-                results = pd.concat(
-                    [recombined_gdf_masked, subtracted[unassigned], not_splittable_polygons],
-                    ignore_index=True,
-                )
-
-                results = pp_test_gdf(input_gdf=results)
-
-                large_polygons_handled = results.explode(index_parts=True).reset_index(drop=True)
-                return large_polygons_handled
-            else:
-                info_msg = (
-                    f"There are no polygons with a Polsby–Popper score above the {pp_test_threshold}. "
-                    "No polygons were split."
-                )
-                _log.info(info_msg)
-                return waterbody_polygons_
+            large_polygons_handled = erode_dilate_v2(
+                waterbody_polygons=waterbody_polygons, pp_test_threshold=pp_test_threshold
+            )
+            return large_polygons_handled
 
 
 def filter_waterbodies(
