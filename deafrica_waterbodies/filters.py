@@ -453,14 +453,13 @@ def erode_dilate_v1(
         # Buffer the polygons.
         split_polygons_buffered = split_polygons.buffer(50)
 
-        # Convert to a GeoDataFrame.
-        split_polygons_gdf = gpd.GeoDataFrame(geometry=split_polygons_buffered, crs=crs)
-        split_polygons_gdf = pp_test_gdf(input_gdf=split_polygons_gdf)
-
+        # Merge the split polygons with the not split polygons.
         large_polygons_handled = pd.concat(
-            [not_splittable_polygons, split_polygons_gdf], ignore_index=True
+            [not_splittable_polygons.geometry, split_polygons_buffered], ignore_index=True
         )
 
+        # Convert the Geoseries into a GeoDataFrame.
+        large_polygons_handled = gpd.GeoDataFrame(geometry=large_polygons_handled, crs=crs)
         _log.info(
             f"Polygon count after splitting using erode-dilate-v1 method: {len(large_polygons_handled)}"
         )
@@ -471,6 +470,12 @@ def erode_dilate_v1(
             "No polygons were split."
         )
         _log.info(info_msg)
+
+        # Return the geometry column only.
+        waterbody_polygons_ = gpd.GeoDataFrame(
+            geometry=waterbody_polygons_.geometry, crs=crs
+        ).reset_index(drop=True)
+
         return waterbody_polygons_
 
 
@@ -552,9 +557,11 @@ def erode_dilate_v2(
             ignore_index=True,
         )
 
-        results = pp_test_gdf(input_gdf=results)
-
+        # Explode multi-part geometries into multiple single geometries.
         large_polygons_handled = results.explode(index_parts=True).reset_index(drop=True)
+
+        # Return the geometry column only.
+        large_polygons_handled = gpd.GeoDataFrame(geometry=large_polygons_handled.geometry, crs=crs)
 
         _log.info(
             f"Polygon count after splitting using erode-dilate-v2 method: {len(large_polygons_handled)}"
@@ -566,6 +573,12 @@ def erode_dilate_v2(
             "No polygons were split."
         )
         _log.info(info_msg)
+
+        # Return the geometry column only.
+        waterbody_polygons_ = gpd.GeoDataFrame(
+            geometry=waterbody_polygons_.geometry, crs=crs
+        ).reset_index(drop=True)
+
         return waterbody_polygons_
 
 
@@ -608,7 +621,12 @@ def split_large_polygons(
             f"select one of the following methods: {valid_options[:2]}."
         )
         _log.info(info_msg)
-        waterbody_polygons_ = pp_test_gdf(waterbody_polygons)
+
+        # Return the geometry column only.
+        waterbody_polygons_ = gpd.GeoDataFrame(
+            geometry=waterbody_polygons.geometry, crs=waterbody_polygons.crs
+        ).reset_index(drop=True)
+
         return waterbody_polygons_
     else:
         _log.info(
