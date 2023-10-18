@@ -90,19 +90,17 @@ def filter_by_intersection(
 
 
 def filter_by_area(
-    primary_threshold_polygons: gpd.GeoDataFrame | None,
-    secondary_threshold_polygons: gpd.GeoDataFrame | None,
+    polygons_gdf: gpd.GeoDataFrame | None,
     min_polygon_size: float = 4500,
     max_polygon_size: float = math.inf,
-) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+) -> gpd.GeoDataFrame:
     """
-    Filter the primary and secondary threshold polygons using the minimum and
+    Filter a set of water body polygons using the minimum and
     maximum area.
 
     Parameters
     ----------
-    primary_threshold_polygons : gpd.GeoDataFrame
-    secondary_threshold_polygons : gpd.GeoDataFrame
+    polygons_gdf : gpd.GeoDataFrame
     min_polygon_size : float, optional
         Minimum area of a waterbody polygon to be included in the output polygons, by default 4500
     max_polygon_size : float, optional
@@ -110,54 +108,24 @@ def filter_by_area(
 
     Returns
     -------
-    tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-        The area filtered primary threshold polygons and the area filtered
-        secondary threshold polygons.
+    gpd.GeoDataFrame:
+        The area filtered water body polygons.
     """
-    if primary_threshold_polygons is not None and secondary_threshold_polygons is not None:
-        assert primary_threshold_polygons.crs == secondary_threshold_polygons.crs
-
-    try:
-        crs = primary_threshold_polygons.crs
-    except Exception:
-        crs = secondary_threshold_polygons.crs
-
+    crs = polygons_gdf.crs
     assert crs.is_projected
 
-    if primary_threshold_polygons is not None:
-        _log.info(
-            f"Filtering primary threshold polygons by minimum area {min_polygon_size} and max area {max_polygon_size}..."
-        )
+    _log.info(
+        f"Filtering {len(polygons_gdf)} polygons by minimum area {min_polygon_size} and max area {max_polygon_size}..."
+    )
 
-        primary_threshold_polygons["area"] = pd.to_numeric(primary_threshold_polygons.area)
-        area_filtered_primary_threshold_polygons = primary_threshold_polygons.loc[
-            (
-                (primary_threshold_polygons["area"] > min_polygon_size)
-                & (primary_threshold_polygons["area"] <= max_polygon_size)
-            )
-        ]
-        area_filtered_primary_threshold_polygons.reset_index(drop=True, inplace=True)
-        _log.info(
-            f"Filtered out {len(primary_threshold_polygons) - len(area_filtered_primary_threshold_polygons)} primary threshold polygons."
-        )
-    else:
-        area_filtered_primary_threshold_polygons = None
+    polygons_gdf["area"] = pd.to_numeric(polygons_gdf.area)
+    area_filtered_polygons_gdf = polygons_gdf.loc[
+        ((polygons_gdf["area"] > min_polygon_size) & (polygons_gdf["area"] <= max_polygon_size))
+    ]
+    area_filtered_polygons_gdf.reset_index(drop=True, inplace=True)
+    _log.info(f"Filtered out {len(polygons_gdf) - len(area_filtered_polygons_gdf)} polygons.")
 
-    if secondary_threshold_polygons is not None:
-        _log.info(f"Filtering secondary threshold polygons by max area {max_polygon_size}...")
-
-        secondary_threshold_polygons["area"] = pd.to_numeric(secondary_threshold_polygons.area)
-        area_filtered_secondary_threshold_polygons = secondary_threshold_polygons.loc[
-            secondary_threshold_polygons["area"] <= max_polygon_size
-        ]
-        area_filtered_secondary_threshold_polygons.reset_index(drop=True, inplace=True)
-        _log.info(
-            f"Filtered out {len(secondary_threshold_polygons) - len(area_filtered_secondary_threshold_polygons)} secondary threshold polygons."
-        )
-    else:
-        area_filtered_secondary_threshold_polygons = None
-
-    return area_filtered_primary_threshold_polygons, area_filtered_secondary_threshold_polygons
+    return area_filtered_polygons_gdf
 
 
 def filter_using_land_sea_mask(
