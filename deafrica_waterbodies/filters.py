@@ -10,6 +10,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import xarray as xr
+from shapely.geometry import MultiPolygon, Polygon
 
 _log = logging.getLogger(__name__)
 
@@ -642,6 +643,85 @@ def split_large_polygons(
                 waterbody_polygons=waterbody_polygons, pp_test_threshold=pp_test_threshold
             )
             return large_polygons_handled
+
+
+# From https://stackoverflow.com/a/70387141
+def remove_polygon_interiors(poly: Polygon) -> Polygon:
+    """
+    Close polygon holes by limitation to the exterior ring.
+
+    Parameters
+    ----------
+    poly : Polygon
+        Input Polygon.
+
+    Returns
+    -------
+    Polygon
+        Input Polygon without any interior holes.
+    """
+    if len(poly.interiors) > 0:
+        return Polygon(list(poly.exterior.coords))
+    else:
+        return poly
+
+
+def get_largest_polygon(poly_list: list) -> Polygon:
+    """
+    Get the largest polygon from a list of polygons.
+
+    Parameters
+    ----------
+    poly_list : list
+        List of polygons to filter.
+
+    Returns
+    -------
+    Polygon
+        The largest polygon by area from the list of polygons.
+    """
+    # Get the area of each polygon in the list.
+    poly_areas = [poly.area for poly in poly_list]
+    # Get the largest area.
+    max_area = max(poly_areas)
+    # Get the index for the largest area.
+    max_area_idx = poly_areas.index(max_area)
+    # Use the index to get the largest polygon.
+    largest_polygon = poly_list[max_area_idx]
+    return largest_polygon
+
+
+def fill_holes(geom: Polygon | MultiPolygon) -> Polygon | MultiPolygon:
+    """
+    Fill holes in polygon.
+
+    Parameters
+    ----------
+    geom : Polygon | MultiPolygon
+        Polygon or MultiPolygon to fill holes in.
+
+    Returns
+    -------
+    Polygon | MultiPolygon
+        Polygon or MultiPolygon with no holes.
+    """
+    if isinstance(geom, MultiPolygon):
+        # For each polygon in the MultiPolygon,
+        # close the polygon holes.
+        closed_polygons = [remove_polygon_interiors(g) for g in geom.geoms]
+        # Get the largest polygon.
+        largest_polygon = get_largest_polygon(closed_polygons)
+        # Get the polygons not within the largest polygon.
+        outside_largest_polygon = [
+            poly for poly in closed_polygons if not poly.within(largest_polygon)
+        ]
+
+        if outside_largest_polygon:
+            return MultiPolygon([largest_polygon, *outside_largest_polygon])
+        else:
+            return largest_polygon
+    elif isinstance(geom, Polygon):
+        return remove_polygon_interiors(geom)
 
 
 def filter_waterbodies(
