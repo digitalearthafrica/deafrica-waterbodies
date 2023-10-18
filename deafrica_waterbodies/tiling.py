@@ -134,11 +134,11 @@ def tile_wofs_ls_summary_alltime(
     return tiles, gw
 
 
-def get_tiles_ids(
+def get_tiles(
     aoi_gdf: gpd.GeoDataFrame | None, tile_size_factor: float = 2, num_workers: int = 8
-) -> list[tuple[int, int]]:
+) -> tuple[dict, datacube.api.GridWorkflow]:
     """
-    Get the tile ids of the WOfS All Time Summary whose extents intersect
+    Get the tile of the WOfS All Time Summary whose extents intersect
     with any of the area of interest polygons.
 
     Parameters
@@ -152,14 +152,18 @@ def get_tiles_ids(
         Number of worker processes to use when filtering tiles, by default 8
     Returns
     -------
-    list[tuple[int, int]]
-        Tile ids of the WOfS All Time Summary tiles whose extents intersect
+    tuple[dict, datacube.api.GridWorkflow]
+        WOfS All Time Summary tiles whose extents intersect
         with any of the area of interest polygons.
+        GridWorkflow to use to load the tiles.
     """
 
-    tiles = tile_wofs_ls_summary_alltime(tile_size_factor=tile_size_factor)
+    tiles, grid_workflow = tile_wofs_ls_summary_alltime(tile_size_factor=tile_size_factor)
 
     # Filter the tiles to the area of interest.
-    filtered_tile_ids = filter_tiles(tiles, aoi_gdf, num_workers)
-
-    return filtered_tile_ids
+    if aoi_gdf is not None:
+        filtered_tile_ids = filter_tiles(tiles=tiles, polygons_gdf=aoi_gdf, num_workers=num_workers)
+        filtered_tiles = {k: v for k, v in tiles.items() if k in filtered_tile_ids}
+        return filtered_tiles, grid_workflow
+    else:
+        return tiles, grid_workflow
