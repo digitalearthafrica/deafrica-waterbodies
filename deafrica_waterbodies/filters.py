@@ -118,9 +118,12 @@ def filter_by_area(
         f"Filtering {len(polygons_gdf)} polygons by minimum area {min_polygon_size} and max area {max_polygon_size}..."
     )
 
-    polygons_gdf["area"] = pd.to_numeric(polygons_gdf.area)
+    polygons_gdf["area_m2"] = pd.to_numeric(polygons_gdf.area)
     area_filtered_polygons_gdf = polygons_gdf.loc[
-        ((polygons_gdf["area"] > min_polygon_size) & (polygons_gdf["area"] <= max_polygon_size))
+        (
+            (polygons_gdf["area_m2"] > min_polygon_size)
+            & (polygons_gdf["area_m2"] <= max_polygon_size)
+        )
     ]
     area_filtered_polygons_gdf = gpd.GeoDataFrame(data=area_filtered_polygons_gdf)
 
