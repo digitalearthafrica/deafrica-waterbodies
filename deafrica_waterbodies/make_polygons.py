@@ -274,11 +274,11 @@ def load_wofs_frequency(
 
         # Threshold using the detection threshold.
         detection = wofs_alltime_summary.frequency > detection_threshold
-        valid_detection = detection.where(detection & wofs_alltime_summary_valid_clear_count)
+        valid_detection = (detection > 0) & wofs_alltime_summary_valid_clear_count
 
         # Threshold the using the extent threshold.
         extent = wofs_alltime_summary.frequency > extent_threshold
-        valid_extent = extent.where(extent & wofs_alltime_summary_valid_clear_count)
+        valid_extent = (extent > 0) & wofs_alltime_summary_valid_clear_count
 
     except Exception as error:
         _log.exception(error)
