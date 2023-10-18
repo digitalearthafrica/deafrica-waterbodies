@@ -81,7 +81,7 @@ boto3==1.28.64
     #   eodatasets3
     #   moto
     #   odc-cloud
-boto3-stubs[s3,sqs]==1.28.64
+boto3-stubs[s3,sqs]==1.28.65
     # via -r requirements.in
 botocore==1.31.64
     # via
@@ -94,7 +94,7 @@ botocore==1.31.64
     #   moto
     #   odc-cloud
     #   s3transfer
-botocore-stubs==1.31.64
+botocore-stubs==1.31.65
     # via boto3-stubs
 bottleneck==1.3.7
     # via datacube
@@ -120,7 +120,7 @@ cffi==1.16.0
     # via
     #   argon2-cffi-bindings
     #   cryptography
-cfn-lint==0.82.0
+cfn-lint==0.82.1
     # via moto
 cftime==1.6.2
     # via netcdf4
@@ -181,7 +181,6 @@ cycler==0.12.1
 dask[array,complete,dataframe,diagnostics,distributed]==2023.10.0
     # via
     #   dask-gateway
-    #   dask-geopandas
     #   dask-glm
     #   dask-image
     #   dask-ml
@@ -191,8 +190,6 @@ dask[array,complete,dataframe,diagnostics,distributed]==2023.10.0
     #   odc-algo
 dask-gateway==2023.9.0
     # via deafrica-tools
-dask-geopandas==0.3.1
-    # via -r requirements.in
 dask-glm==0.3.0
     # via dask-ml
 dask-image==2023.8.1
@@ -226,7 +223,6 @@ distributed==2023.10.0
     # via
     #   dask
     #   dask-gateway
-    #   dask-geopandas
     #   dask-glm
     #   dask-ml
     #   datacube
@@ -288,7 +284,6 @@ geojson==3.0.1
 geopandas==0.14.0
     # via
     #   -r requirements.in
-    #   dask-geopandas
     #   deafrica-tools
 geopy==2.4.0
     # via deafrica-tools
@@ -312,7 +307,9 @@ imageio==2.31.5
     #   pims
     #   scikit-image
 importlib-metadata==6.8.0
-    # via dask
+    # via
+    #   dask
+    #   moto
 importlib-resources==6.1.0
     # via odc-apps-dc-tools
 iniconfig==2.0.0
@@ -591,7 +588,6 @@ packaging==23.2
     #   black
     #   bokeh
     #   dask
-    #   dask-geopandas
     #   dask-ml
     #   datacube
     #   deafrica-tools
