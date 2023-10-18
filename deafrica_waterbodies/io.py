@@ -185,6 +185,7 @@ def write_waterbodies_to_file(
     waterbodies_gdf: gpd.GeoDataFrame,
     product_version: str,
     output_directory: str | Path,
+    file_name_prefix: str = "waterbodies",
 ):
     """
     Function to write waterbody polygons to an ESRI Shapefile.
@@ -197,9 +198,10 @@ def write_waterbodies_to_file(
         The DE Africa Waterbodies service product version.
     output_directory : str | Path,
         S3 URI or File URI of the directory to write the waterbody polygons to.
-
+    file_name_prefix: str, optional
+        Prefix to use when naming the output file(s).
     """
-    output_fn = f"waterbodiesv{product_version.replace('.', '-')[0]}.shp"
+    output_fn = f"{file_name_prefix}v{product_version.replace('.', '-')[0]}.shp"
     output_fp = os.path.join(output_directory, output_fn)
 
     if check_if_s3_uri(output_directory):
@@ -208,7 +210,7 @@ def write_waterbodies_to_file(
 
         # Get the bucket name and object prefix.
         output_bucket_name = urllib.parse.urlparse(output_directory).netloc
-        output_object_prefix = urllib.parse.urlparse(output_directory).path.lstrip("/")
+        output_object_prefix = urllib.parse.urlparse(output_directory).path.lstrip("/").rstrip("/")
 
         # Make a temporary folder locally.
         fs = fsspec.filesystem("file")
