@@ -122,7 +122,8 @@ def filter_by_area(
     area_filtered_polygons_gdf = polygons_gdf.loc[
         ((polygons_gdf["area"] > min_polygon_size) & (polygons_gdf["area"] <= max_polygon_size))
     ]
-    # area_filtered_polygons_gdf.reset_index(drop=True, inplace=True)
+    area_filtered_polygons_gdf = gpd.GeoDataFrame(data=area_filtered_polygons_gdf)
+
     _log.info(f"Filtered out {len(polygons_gdf) - len(area_filtered_polygons_gdf)} polygons.")
 
     return area_filtered_polygons_gdf
