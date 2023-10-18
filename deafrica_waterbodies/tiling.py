@@ -164,6 +164,10 @@ def get_tiles(
     if aoi_gdf is not None:
         filtered_tile_ids = filter_tiles(tiles=tiles, polygons_gdf=aoi_gdf, num_workers=num_workers)
         filtered_tiles = {k: v for k, v in tiles.items() if k in filtered_tile_ids}
+        _log.info(f"Filtered out {len(tiles) - len(filtered_tiles)} tiles.")
+        _log.info(
+            f"Number of wofs_ls_summary_alltime tiles covering the area of interest: {len(filtered_tiles)}"
+        )
         return filtered_tiles, grid_workflow
     else:
         return tiles, grid_workflow
