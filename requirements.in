@@ -4,7 +4,6 @@ boto3-stubs[sqs,s3]
 botocore
 click
 datacube
-dask_geopandas
 deafrica-tools >= 2.1.2 --extra-index-url="https://packages.dea.ga.gov.au"
 fsspec
 gdal

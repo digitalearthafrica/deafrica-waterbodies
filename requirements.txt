@@ -14,11 +14,11 @@ affine==2.4.0
     #   odc-geo
     #   rasterio
     #   rasterstats
-aiobotocore[boto3]==2.6.0
+aiobotocore[boto3]==2.7.0
     # via
     #   deafrica-tools
     #   odc-cloud
-aiohttp==3.8.5
+aiohttp==3.8.6
     # via
     #   aiobotocore
     #   dask-gateway
@@ -27,15 +27,13 @@ aioitertools==0.11.0
     # via aiobotocore
 aiosignal==1.3.1
     # via aiohttp
-annotated-types==0.5.0
-    # via pydantic
 anyio==4.0.0
     # via jupyter-server
 argon2-cffi==23.1.0
     # via jupyter-server
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
-arrow==1.2.3
+arrow==1.3.0
     # via isoduration
 asttokens==2.4.0
     # via stack-data
@@ -53,29 +51,28 @@ attrs==23.1.0
     #   jschema-to-python
     #   jsonschema
     #   rasterio
-    #   referencing
     #   sarif-om
-aws-sam-translator==1.76.0
+aws-sam-translator==1.78.0
     # via cfn-lint
-aws-xray-sdk==2.12.0
+aws-xray-sdk==2.12.1
     # via moto
-babel==2.12.1
+babel==2.13.0
     # via jupyterlab-server
 backcall==0.2.0
     # via ipython
 beautifulsoup4==4.12.2
     # via nbconvert
-black==23.9.1
+black==23.10.0
     # via
     #   -r requirements.in
     #   deafrica-tools
-bleach==6.0.0
+bleach==6.1.0
     # via nbconvert
-bokeh==3.2.2
+bokeh==3.3.0
     # via dask
 boltons==23.0.0
     # via eodatasets3
-boto3==1.28.17
+boto3==1.28.64
     # via
     #   -r requirements.in
     #   aiobotocore
@@ -84,9 +81,9 @@ boto3==1.28.17
     #   eodatasets3
     #   moto
     #   odc-cloud
-boto3-stubs[s3,sqs]==1.28.57
+boto3-stubs[s3,sqs]==1.28.64
     # via -r requirements.in
-botocore==1.31.17
+botocore==1.31.64
     # via
     #   -r requirements.in
     #   aiobotocore
@@ -97,7 +94,7 @@ botocore==1.31.17
     #   moto
     #   odc-cloud
     #   s3transfer
-botocore-stubs==1.31.57
+botocore-stubs==1.31.64
     # via boto3-stubs
 bottleneck==1.3.7
     # via datacube
@@ -123,11 +120,11 @@ cffi==1.16.0
     # via
     #   argon2-cffi-bindings
     #   cryptography
-cfn-lint==0.80.3
+cfn-lint==0.82.0
     # via moto
 cftime==1.6.2
     # via netcdf4
-charset-normalizer==3.2.0
+charset-normalizer==3.3.0
     # via
     #   aiohttp
     #   requests
@@ -148,6 +145,7 @@ click==8.1.7
     #   eodatasets3
     #   fiona
     #   odc-apps-dc-tools
+    #   odc-dscache
     #   rasterio
     #   rasterstats
 click-plugins==1.1.1
@@ -159,7 +157,7 @@ cligj==0.7.2
     #   fiona
     #   rasterio
     #   rasterstats
-cloudpickle==2.2.1
+cloudpickle==3.0.0
     # via
     #   dask
     #   dask-glm
@@ -178,11 +176,12 @@ cryptography==41.0.4
     #   moto
     #   python-jose
     #   sshpubkeys
-cycler==0.12.0
+cycler==0.12.1
     # via matplotlib
-dask[array,complete,dataframe,diagnostics,distributed]==2023.9.2
+dask[array,complete,dataframe,diagnostics,distributed]==2023.10.0
     # via
     #   dask-gateway
+    #   dask-geopandas
     #   dask-glm
     #   dask-image
     #   dask-ml
@@ -192,19 +191,22 @@ dask[array,complete,dataframe,diagnostics,distributed]==2023.9.2
     #   odc-algo
 dask-gateway==2023.9.0
     # via deafrica-tools
+dask-geopandas==0.3.1
+    # via -r requirements.in
 dask-glm==0.3.0
     # via dask-ml
 dask-image==2023.8.1
     # via odc-algo
 dask-ml==2023.3.24
     # via deafrica-tools
-datacube[performance,s3]==1.8.15
+datacube[performance,s3]==1.8.16
     # via
     #   -r requirements.in
     #   deafrica-tools
     #   eodatasets3
     #   odc-algo
     #   odc-apps-dc-tools
+    #   odc-dscache
     #   odc-ui
 datadog==0.47.0
     # via odc-apps-dc-tools
@@ -220,10 +222,11 @@ defusedxml==0.7.1
     #   nbconvert
 deprecat==2.1.1
     # via datacube
-distributed==2023.9.2
+distributed==2023.10.0
     # via
     #   dask
     #   dask-gateway
+    #   dask-geopandas
     #   dask-glm
     #   dask-ml
     #   datacube
@@ -243,11 +246,11 @@ exceptiongroup==1.1.3
     #   cattrs
     #   ipython
     #   pytest
-executing==1.2.0
+executing==2.0.0
     # via stack-data
-fastjsonschema==2.18.0
+fastjsonschema==2.18.1
     # via nbformat
-fiona==1.9.4.post1
+fiona==1.9.5
     # via
     #   deafrica-tools
     #   geopandas
@@ -258,7 +261,7 @@ flake8==6.0.0
     #   deafrica-tools
 folium==0.14.0
     # via deafrica-tools
-fonttools==4.43.0
+fonttools==4.43.1
     # via matplotlib
 fqdn==1.5.1
     # via jsonschema
@@ -285,14 +288,15 @@ geojson==3.0.1
 geopandas==0.14.0
     # via
     #   -r requirements.in
+    #   dask-geopandas
     #   deafrica-tools
 geopy==2.4.0
     # via deafrica-tools
 graphql-core==3.2.3
     # via moto
-greenlet==2.0.2
+greenlet==3.0.0
     # via sqlalchemy
-h5py==3.9.0
+h5py==3.10.0
     # via eodatasets3
 hdstats==0.2.1
     # via deafrica-tools
@@ -303,14 +307,12 @@ idna==3.4
     #   moto
     #   requests
     #   yarl
-imageio==2.31.4
+imageio==2.31.5
     # via
     #   pims
     #   scikit-image
 importlib-metadata==6.8.0
-    # via
-    #   dask
-    #   moto
+    # via dask
 importlib-resources==6.1.0
     # via odc-apps-dc-tools
 iniconfig==2.0.0
@@ -321,7 +323,7 @@ ipyleaflet==0.17.4
     # via
     #   deafrica-tools
     #   odc-ui
-ipython==8.16.0
+ipython==8.16.1
     # via
     #   deafrica-tools
     #   ipykernel
@@ -339,7 +341,7 @@ isort==5.12.0
     # via
     #   -r requirements.in
     #   deafrica-tools
-jedi==0.19.0
+jedi==0.19.1
     # via ipython
 jinja2==3.1.2
     # via
@@ -377,32 +379,29 @@ jsonpointer==2.4
     # via
     #   jsonpatch
     #   jsonschema
-jsonschema[format-nongpl]==4.19.1
+jsonschema[format-nongpl]==4.17.3
     # via
     #   aws-sam-translator
     #   cfn-lint
     #   datacube
     #   eodatasets3
+    #   jsonschema-spec
     #   jupyter-events
     #   jupyterlab-server
     #   nbformat
     #   openapi-schema-validator
     #   openapi-spec-validator
     #   pystac
-jsonschema-spec==0.2.4
+jsonschema-spec==0.1.5
     # via openapi-spec-validator
-jsonschema-specifications==2023.7.1
-    # via
-    #   jsonschema
-    #   openapi-schema-validator
 junit-xml==1.9
     # via cfn-lint
-jupyter-client==8.3.1
+jupyter-client==8.4.0
     # via
     #   ipykernel
     #   jupyter-server
     #   nbclient
-jupyter-core==5.3.2
+jupyter-core==5.4.0
     # via
     #   ipykernel
     #   jupyter-client
@@ -411,11 +410,11 @@ jupyter-core==5.3.2
     #   nbclient
     #   nbconvert
     #   nbformat
-jupyter-events==0.7.0
+jupyter-events==0.6.3
     # via jupyter-server
 jupyter-lsp==2.2.0
     # via jupyterlab
-jupyter-server==2.7.3
+jupyter-server==2.8.0
     # via
     #   jupyter-lsp
     #   jupyterlab
@@ -425,11 +424,11 @@ jupyter-server-terminals==0.4.4
     # via jupyter-server
 jupyter-ui-poll==0.2.2
     # via odc-ui
-jupyterlab==4.0.6
+jupyterlab==4.0.7
     # via -r requirements.in
 jupyterlab-pygments==0.2.2
     # via nbconvert
-jupyterlab-server==2.25.0
+jupyterlab-server==2.24.0
     # via jupyterlab
 jupyterlab-widgets==3.0.9
     # via ipywidgets
@@ -443,6 +442,8 @@ lazy-object-proxy==1.9.0
     # via openapi-spec-validator
 llvmlite==0.41.0
     # via numba
+lmdb==1.4.1
+    # via odc-dscache
 locket==1.0.0
     # via
     #   distributed
@@ -469,9 +470,9 @@ matplotlib-inline==0.1.6
     #   ipython
 mccabe==0.7.0
     # via flake8
-mistune==3.0.1
+mistune==3.0.2
     # via nbconvert
-moto[all]==4.2.4
+moto[all]==4.2.6
     # via -r requirements.in
 mpmath==1.3.0
     # via sympy
@@ -481,6 +482,8 @@ multidict==6.0.4
     # via
     #   aiohttp
     #   yarl
+multipart==0.2.4
+    # via moto
 multipledispatch==1.0.0
     # via
     #   dask-glm
@@ -493,7 +496,7 @@ mypy-extensions==1.0.0
     # via black
 nbclient==0.8.0
     # via nbconvert
-nbconvert==7.8.0
+nbconvert==7.9.2
     # via jupyter-server
 nbformat==5.9.2
     # via
@@ -548,7 +551,6 @@ numpy==1.25.2
     #   pims
     #   pyarrow
     #   pytmd
-    #   pywavelets
     #   rasterio
     #   rasterstats
     #   scikit-image
@@ -564,29 +566,32 @@ odc-algo==0.2.3
     # via
     #   deafrica-tools
     #   odc-ui
-odc-apps-dc-tools==0.2.13
+odc-apps-dc-tools==0.2.14
     # via -r requirements.in
 odc-cloud[async]==0.2.3
     # via odc-apps-dc-tools
+odc-dscache==0.2.2
+    # via -r requirements.in
 odc-geo==0.4.1
     # via deafrica-tools
 odc-io==0.2.1
     # via odc-apps-dc-tools
 odc-ui==0.2.1.dev3676
     # via deafrica-tools
-openapi-schema-validator==0.6.1
+openapi-schema-validator==0.4.4
     # via openapi-spec-validator
-openapi-spec-validator==0.6.0
+openapi-spec-validator==0.5.7
     # via moto
 overrides==7.4.0
     # via jupyter-server
 owslib==0.29.2
     # via deafrica-tools
-packaging==23.1
+packaging==23.2
     # via
     #   black
     #   bokeh
     #   dask
+    #   dask-geopandas
     #   dask-ml
     #   datacube
     #   deafrica-tools
@@ -614,6 +619,7 @@ pandas==2.1.1
     #   datacube
     #   deafrica-tools
     #   geopandas
+    #   odc-dscache
     #   odc-ui
     #   seaborn
     #   xarray
@@ -635,7 +641,7 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
-pillow==10.0.1
+pillow==10.1.0
     # via
     #   bokeh
     #   imageio
@@ -643,7 +649,7 @@ pillow==10.0.1
     #   scikit-image
 pims==0.6.1
     # via dask-image
-platformdirs==3.10.0
+platformdirs==3.11.0
     # via
     #   black
     #   jupyter-core
@@ -653,19 +659,21 @@ prometheus-client==0.17.1
     # via jupyter-server
 prompt-toolkit==3.0.39
     # via ipython
-psutil==5.9.5
+psutil==5.9.6
     # via
     #   distributed
     #   ipykernel
-psycopg2==2.9.8
-    # via datacube
+psycopg2==2.9.9
+    # via
+    #   datacube
+    #   odc-dscache
 ptyprocess==0.7.0
     # via
     #   pexpect
     #   terminado
 pure-eval==0.2.2
     # via stack-data
-py-partiql-parser==0.3.7
+py-partiql-parser==0.4.0
     # via moto
 pyarrow==13.0.0
     # via dask
@@ -677,10 +685,8 @@ pycodestyle==2.10.0
     # via flake8
 pycparser==2.21
     # via cffi
-pydantic==2.4.2
+pydantic==1.10.13
     # via aws-sam-translator
-pydantic-core==2.10.1
-    # via pydantic
 pyflakes==3.0.1
     # via flake8
 pygments==2.16.1
@@ -700,7 +706,9 @@ pyproj==3.6.1
     #   geopandas
     #   odc-geo
     #   pytmd
-pystac[validation]==1.8.4
+pyrsistent==0.19.3
+    # via jsonschema
+pystac[validation]==1.8.3
     # via
     #   eodatasets3
     #   odc-apps-dc-tools
@@ -735,7 +743,7 @@ python-jose[cryptography]==3.3.0
     # via moto
 python-json-logger==2.0.7
     # via jupyter-events
-python-rapidjson==1.11
+python-rapidjson==1.12
     # via eodatasets3
 pytmd==2.0.8
     # via deafrica-tools
@@ -744,8 +752,6 @@ pytz==2023.3.post1
     #   deafrica-tools
     #   owslib
     #   pandas
-pywavelets==1.4.1
-    # via scikit-image
 pyyaml==6.0.1
     # via
     #   bokeh
@@ -765,7 +771,7 @@ pyzmq==25.1.1
     #   ipykernel
     #   jupyter-client
     #   jupyter-server
-rasterio==1.3.8
+rasterio==1.3.8.post2
     # via
     #   datacube
     #   deafrica-tools
@@ -776,13 +782,7 @@ rasterio==1.3.8
     #   rio-stac
 rasterstats==0.19.0
     # via deafrica-tools
-referencing==0.30.2
-    # via
-    #   jsonschema
-    #   jsonschema-spec
-    #   jsonschema-specifications
-    #   jupyter-events
-regex==2023.8.8
+regex==2023.10.3
     # via cfn-lint
 requests==2.31.0
     # via
@@ -810,23 +810,19 @@ rfc3986-validator==0.1.1
     #   jupyter-events
 rio-stac==0.8.1
     # via odc-apps-dc-tools
-rpds-py==0.10.3
-    # via
-    #   jsonschema
-    #   referencing
 rsa==4.9
     # via python-jose
-ruamel-yaml==0.17.33
+ruamel-yaml==0.17.35
     # via
     #   datacube
     #   eodatasets3
-ruamel-yaml-clib==0.2.7
+ruamel-yaml-clib==0.2.8
     # via ruamel-yaml
-s3transfer==0.6.2
+s3transfer==0.7.0
     # via boto3
 sarif-om==1.0.4
     # via cfn-lint
-scikit-image==0.21.0
+scikit-image==0.22.0
     # via
     #   deafrica-tools
     #   odc-algo
@@ -851,9 +847,9 @@ seaborn==0.13.0
     # via deafrica-tools
 send2trash==1.8.2
     # via jupyter-server
-setuptools-scm==8.0.3
+setuptools-scm==8.0.4
     # via pytmd
-shapely==2.0.1
+shapely==2.0.2
     # via
     #   -r requirements.in
     #   datacube
@@ -862,7 +858,7 @@ shapely==2.0.1
     #   geopandas
     #   odc-geo
     #   rasterstats
-simplejson==3.19.1
+simplejson==3.19.2
     # via rasterstats
 six==1.16.0
     # via
@@ -892,9 +888,9 @@ sqlalchemy==1.4.49
     #   geoalchemy2
 sshpubkeys==3.3.1
     # via moto
-stack-data==0.6.2
+stack-data==0.6.3
     # via ipython
-structlog==23.1.0
+structlog==23.2.0
     # via eodatasets3
 sympy==1.12
     # via cfn-lint
@@ -925,6 +921,7 @@ toolz==0.12.0
     #   distributed
     #   odc-algo
     #   odc-apps-dc-tools
+    #   odc-dscache
     #   partd
 tornado==6.3.3
     # via
@@ -940,7 +937,7 @@ tqdm==4.66.1
     # via
     #   -r requirements.in
     #   deafrica-tools
-traitlets==5.10.1
+traitlets==5.11.2
     # via
     #   comm
     #   ipykernel
@@ -958,29 +955,31 @@ traitlets==5.10.1
     #   traittypes
 traittypes==0.2.1
     # via ipyleaflet
-types-awscrt==0.19.1
+types-awscrt==0.19.3
     # via botocore-stubs
+types-python-dateutil==2.8.19.14
+    # via arrow
 types-pyyaml==6.0.12.12
     # via responses
 types-s3transfer==0.7.0
     # via boto3-stubs
-typing-extensions==4.8.0
+typing-extensions==4.5.0
     # via
     #   async-lru
     #   aws-sam-translator
     #   black
     #   boto3-stubs
     #   cattrs
+    #   jsonschema-spec
     #   mypy-boto3-s3
     #   mypy-boto3-sqs
     #   pydantic
-    #   pydantic-core
     #   setuptools-scm
 tzdata==2023.3
     # via pandas
 uri-template==1.3.0
     # via jsonschema
-urllib3==1.26.16
+urllib3==2.0.7
     # via
     #   botocore
     #   distributed
@@ -989,7 +988,7 @@ urllib3==1.26.16
     #   responses
 urlpath==1.2.0
     # via odc-apps-dc-tools
-wcwidth==0.2.7
+wcwidth==0.2.8
     # via prompt-toolkit
 webcolors==1.13
     # via jsonschema
@@ -997,11 +996,11 @@ webencodings==0.5.1
     # via
     #   bleach
     #   tinycss2
-websocket-client==1.6.3
+websocket-client==1.6.4
     # via
     #   docker
     #   jupyter-server
-werkzeug==2.3.7
+werkzeug==3.0.0
     # via moto
 widgetsnbextension==4.0.9
     # via ipywidgets
@@ -1019,7 +1018,7 @@ xarray==2023.9.0
     #   odc-ui
 xmltodict==0.13.0
     # via moto
-xyzservices==2023.7.0
+xyzservices==2023.10.0
     # via
     #   bokeh
     #   ipyleaflet
@@ -1031,6 +1030,8 @@ zipp==3.17.0
     # via
     #   importlib-metadata
     #   moto
+zstandard==0.21.0
+    # via odc-dscache
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

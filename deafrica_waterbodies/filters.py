@@ -6,7 +6,6 @@ import math
 import warnings
 from pathlib import Path
 
-import dask_geopandas
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -506,26 +505,19 @@ def erode_dilate_v2(
     if len(splittable_polygons) >= 1:
         _log.info(f"Splitting {len(splittable_polygons)} polygons.")
 
-        # Repartition the GeoPandas dataframe into a  Dask-GeoPandas dataframe:
-        splittable_polygons_ = dask_geopandas.from_geopandas(splittable_polygons, npartitions=5)
-
-        # Shuffle the data into spatially consistent partitions.
-        # i.e. geometries that are spatially near each other will be within the same partition.
-        splittable_polygons_ = splittable_polygons_.spatial_shuffle()
-
         # Buffer the polygons.
-        splittable_polygons_buffered = splittable_polygons_.buffer(-100).buffer(125)
+        splittable_polygons_buffered = splittable_polygons.buffer(-100).buffer(125)
 
         # Get the union of all the buffered polygons as a single geometry,
-        # same as using an empty dissolve.
-        splittable_polygons_buffered_union = splittable_polygons_buffered.unary_union
+        splittable_polygons_buffered_union = gpd.GeoDataFrame(
+            geometry=[splittable_polygons_buffered.unary_union], crs=crs
+        )
 
         # Get the difference of each geometry in the splittable_polygons_ and the single geometry in
         # splittable_polygons_buffered_union
-        subtracted = splittable_polygons_.difference(splittable_polygons_buffered_union)
-
-        # Compute the subtracted.
-        subtracted = subtracted.compute()
+        subtracted = splittable_polygons.overlay(
+            splittable_polygons_buffered_union, how="difference"
+        )
 
         # Explode multi-part geometries into multiple single geometries.
         subtracted = subtracted.explode(index_parts=True).reset_index(drop=True)
