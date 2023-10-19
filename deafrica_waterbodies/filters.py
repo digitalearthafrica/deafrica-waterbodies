@@ -234,14 +234,14 @@ def filter_using_urban_mask(
 
 
 def filter_using_major_rivers_mask(
-    waterbody_polygons: gpd.GeoDataFrame, major_rivers_mask_fp: str | Path = ""
+    polygons_gdf: gpd.GeoDataFrame, major_rivers_mask_fp: str | Path = ""
 ) -> gpd.GeoDataFrame:
     """
     Filter out major rivers polygons from a set of waterbody polygons.
 
     Parameters
     ----------
-    waterbody_polygons : gpd.GeoDataFrame
+    polygons_gdf : gpd.GeoDataFrame
     major_rivers_mask_fp : str | Path, optional
         Vector file path to the polygons to use to filter out major river waterbody polygons, by default ""
 
@@ -251,7 +251,7 @@ def filter_using_major_rivers_mask(
         Filtered set of waterbody polygons with major rivers polygons removed.
 
     """
-    crs = waterbody_polygons.crs
+    crs = polygons_gdf.crs
 
     if major_rivers_mask_fp:
         _log.info("Filtering out major rivers polygons from the waterbody polygons...")
@@ -259,22 +259,23 @@ def filter_using_major_rivers_mask(
             major_rivers = gpd.read_file(major_rivers_mask_fp).to_crs(crs)
         except Exception as error:
             _log.exception(f"Could not read file {major_rivers_mask_fp}")
+            _log.error(error)
             raise error
         else:
             major_rivers_filtered_polygons = filter_by_intersection(
-                gpd_data=waterbody_polygons,
+                gpd_data=polygons_gdf,
                 gpd_filter=major_rivers,
                 filtertype="intersects",
                 invert_mask=True,
                 return_inverse=False,
             )
             _log.info(
-                f"Filtered out {len(waterbody_polygons) - len(major_rivers_filtered_polygons)} waterbody polygons."
+                f"Filtered out {len(polygons_gdf) - len(major_rivers_filtered_polygons)} water body polygons."
             )
             return major_rivers_filtered_polygons
     else:
         _log.info("Skipping filtering out major rivers polygons step.")
-        return waterbody_polygons
+        return polygons_gdf
 
 
 def pp_test_gdf(input_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
