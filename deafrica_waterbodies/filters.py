@@ -175,7 +175,7 @@ def filter_using_land_sea_mask(
                 f"Filtered out {len(polygons_gdf) - len(inland_polygons)} water body polygons."
             )
 
-            return (inland_polygons,)
+            return inland_polygons
 
     else:
         _log.info("Skipping filtering out ocean polygons step.")
