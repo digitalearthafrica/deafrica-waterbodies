@@ -683,111 +683,6 @@ def fill_holes(geom: Polygon | MultiPolygon) -> Polygon | MultiPolygon:
         return remove_polygon_interiors(geom)
 
 
-def filter_waterbodies(
-    primary_threshold_polygons: gpd.GeoDataFrame,
-    secondary_threshold_polygons: gpd.GeoDataFrame,
-    min_polygon_size: float = 4500,
-    max_polygon_size: float = math.inf,
-    land_sea_mask_fp: str | Path = "",
-    urban_mask_fp: str | Path = "",
-    major_rivers_mask_fp: str | Path = "",
-    handle_large_polygons: str = "nothing",
-    pp_test_threshold: float = 0.005,
-) -> gpd.GeoDataFrame:
-    """
-    Apply filters to the primary and secondary threshold waterbody
-    polygons.
-
-    Parameters
-    ----------
-    primary_threshold_polygons : gpd.GeoDataFrame, optional
-        Waterbody polygons generated using the primary threshold.
-    secondary_threshold_polygons : gpd.GeoDataFrame, optional
-        Waterbody polygons generated using the secondary threshold.
-    min_polygon_size : float, optional
-        Minimum area of a waterbody polygon to be included in the output polygons, by default 4500
-    max_polygon_size : float, optional
-        Maximum area of a waterbody polygon to be included in the output polygons, by default math.inf
-    land_sea_mask_fp : str | Path, optional
-        Vector file path to the polygons to use to filter out ocean waterbody polygons, by default ""
-    urban_mask_fp : str | Path, optional
-        Vector file path to the polygons to use to filter out CBDs, by default ""
-    major_rivers_mask_fp : str | Path, optional
-        Vector file path to the polygons to use to filter out major river waterbody polygons, by default ""
-    handle_large_polygons : str, optional
-        Method to use to split large water body polygons, by default "nothing"
-    pp_test_threshold : float, optional
-        Polsby-Popper test value to use when splitting large polygons using the method specified in `handle_large_polygons`, by default 0.005
-
-    Returns
-    -------
-    gpd.GeoDataFrame
-        Filtered set of waterbody polygons.
-    """
-    _log.info(f"Primary threshold polygons count {len(primary_threshold_polygons)}.")
-    _log.info(f"Secondary threshold polygons count {len(secondary_threshold_polygons)}.")
-
-    (
-        area_filtered_primary_threshold_polygons,
-        area_filtered_secondary_threshold_polygons,
-    ) = filter_by_area(
-        primary_threshold_polygons=primary_threshold_polygons,
-        secondary_threshold_polygons=secondary_threshold_polygons,
-        min_polygon_size=min_polygon_size,
-        max_polygon_size=max_polygon_size,
-    )
-
-    (
-        inland_primary_threshold_polygons,
-        inland_secondary_threshold_polygons,
-    ) = filter_using_land_sea_mask(
-        primary_threshold_polygons=area_filtered_primary_threshold_polygons,
-        secondary_threshold_polygons=area_filtered_secondary_threshold_polygons,
-        land_sea_mask_fp=land_sea_mask_fp,
-    )
-
-    (
-        cbd_filtered_primary_threshold_polygons,
-        cbd_filtered_secondary_threshold_polygons,
-    ) = filter_using_urban_mask(
-        primary_threshold_polygons=inland_primary_threshold_polygons,
-        secondary_threshold_polygons=inland_secondary_threshold_polygons,
-        urban_mask_fp=urban_mask_fp,
-    )
-
-    merged_polygons = merge_primary_and_secondary_threshold_polygons(
-        primary_threshold_polygons=cbd_filtered_primary_threshold_polygons,
-        secondary_threshold_polygons=cbd_filtered_secondary_threshold_polygons,
-    )
-
-    major_rivers_filtered_polygons = filter_using_major_rivers_mask(
-        waterbody_polygons=merged_polygons, major_rivers_mask_fp=major_rivers_mask_fp
-    )
-
-    large_polygons_handled = split_large_polygons(
-        waterbody_polygons=major_rivers_filtered_polygons,
-        pp_test_threshold=pp_test_threshold,
-        method=handle_large_polygons,
-    )
-
-    # Reapply the size filtering, just to check that all of the split and filtered waterbodies are
-    # still in the size range we want.
-    area_filtered_large_polygons_handled, _ = filter_by_area(
-        primary_threshold_polygons=large_polygons_handled,
-        secondary_threshold_polygons=None,
-        min_polygon_size=min_polygon_size,
-        max_polygon_size=max_polygon_size,
-    )
-
-    # Return a GeoDataFrame with the geometry column only.
-    filtered_polygons = gpd.GeoDataFrame(
-        geometry=area_filtered_large_polygons_handled["geometry"],
-        crs=area_filtered_large_polygons_handled.crs,
-    )
-
-    return filtered_polygons
-
-
 def filter_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
     """
     Function to filter the HydroSHEDs Land Mask into a boolean mask.
@@ -795,3 +690,48 @@ def filter_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataAr
     # Indicator values: 1 = land, 2 = ocean sink, 3 = inland sink, 255 is no data.
     boolean_mask = (hydrosheds_land_mask != 255) & (hydrosheds_land_mask != 2)
     return boolean_mask
+
+
+def remove_polygons_within_polygons(polygons_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Remove polygons within other polygons.
+
+    Parameters
+    ----------
+    polygons_gdf : gpd.GeoDataFrame
+        Set of polygons to filter.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Input polygons with polygons contained in other polygons removed.
+    """
+    _log.info(f"Initial polygon count {len(polygons_gdf)}")
+
+    polygons_to_delete = []
+    for row in polygons_gdf.itertuples():
+        row_id = row.Index
+        row_geom = row.geometry
+
+        polygons_to_check_against = polygons_gdf.loc[polygons_gdf.index != row_id]
+
+        # Check if the row geometry is within any of the other polygons.
+        if polygons_to_check_against.geometry.contains(row_geom).any():
+            polygons_to_delete.append(row_id)
+
+    if polygons_to_delete:
+        polygons_to_delete_gdf = polygons_gdf.loc[polygons_gdf.index.isin(polygons_to_delete)]
+        _log.info(f"Found {len(polygons_to_delete_gdf)} polygons within polygons.")
+
+        polygons_within_polygons_removed = polygons_gdf.loc[
+            ~polygons_gdf.index.isin(polygons_to_delete)
+        ]
+        _log.info(
+            f"Polygon count after removing polygons within polygons {len(polygons_within_polygons_removed)}."
+        )
+
+        return polygons_within_polygons_removed
+
+    else:
+        _log.info("Found no polygons within polygons.")
+        return polygons_gdf
