@@ -233,52 +233,6 @@ def filter_using_urban_mask(
         return polygons_gdf
 
 
-def merge_primary_and_secondary_threshold_polygons(
-    primary_threshold_polygons: gpd.GeoDataFrame,
-    secondary_threshold_polygons: gpd.GeoDataFrame,
-) -> gpd.GeoDataFrame:
-    """
-    Identify secondary threshold polygons that intersect with the primary threshold
-    polygons and merge them with the primary threshold polygons.
-
-    Parameters
-    ----------
-    primary_threshold_polygons : gpd.GeoDataFrame
-    secondary_threshold_polygons : gpd.GeoDataFrame
-
-    Returns
-    -------
-    gpd.GeoDataFrame
-        Merged primary and secondary threshold polygons.
-    """
-    assert primary_threshold_polygons.crs == secondary_threshold_polygons.crs
-    crs = primary_threshold_polygons.crs
-
-    _log.info("Merging the primary threshold and secondary threshold polygons...")
-    # Find the polygons identified using the secondary threshold that intersect with those identified
-    # using the primary threshold.
-    do_intersect_with_primary = filter_by_intersection(
-        gpd_data=secondary_threshold_polygons,
-        gpd_filter=primary_threshold_polygons,
-        filtertype="intersects",
-        invert_mask=False,
-        return_inverse=False,
-    )
-
-    # Combine the identified polygons  with the primary threshold polygons.
-    combined_polygons = gpd.GeoDataFrame(
-        pd.concat([do_intersect_with_primary, primary_threshold_polygons], ignore_index=True)
-    )
-    # Merge overlapping polygons.
-    merged_combined_polygons_geoms = combined_polygons.unary_union
-    # `Explode` the multipolygon back out into individual polygons.
-    merged_combined_polygons = gpd.GeoDataFrame(crs=crs, geometry=[merged_combined_polygons_geoms])
-    merged_combined_polygons = merged_combined_polygons.explode(index_parts=True)
-
-    _log.info(f"Waterbody polygons count after merge: {len(merged_combined_polygons)}.")
-    return merged_combined_polygons
-
-
 def filter_using_major_rivers_mask(
     waterbody_polygons: gpd.GeoDataFrame, major_rivers_mask_fp: str | Path = ""
 ) -> gpd.GeoDataFrame:
