@@ -183,43 +183,40 @@ def filter_using_land_sea_mask(
 
 
 def filter_using_urban_mask(
-    primary_threshold_polygons: gpd.GeoDataFrame,
-    secondary_threshold_polygons: gpd.GeoDataFrame,
+    polygons_gdf: gpd.GeoDataFrame,
     urban_mask_fp: str | Path = "",
-) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+) -> gpd.GeoDataFrame:
     """
-    Filter out the missclassified waterbodies from the primary and secondary
-    threshold polygons using an urban/CBDs mask.
+    Filter out the missclassified waterbodies from the water body polygons using
+    an urban/CBDs mask.
     WOfS has a known limitation, where deep shadows thrown by tall CBD buildings
     are misclassified as water. This results in 'waterbodies' around these
     misclassified shadows in capital cities.
 
     Parameters
     ----------
-    primary_threshold_polygons : gpd.GeoDataFrame
-    secondary_threshold_polygons : gpd.GeoDataFrame
+    polygons_gdf: gpd.GeoDataFrame
     urban_mask_fp : str | Path, optional
         Vector file path to the polygons to use to filter out CBDs, by default ""
 
     Returns
     -------
-    tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-        Primary threshold polygons with missclassified waterbodies removed.
+    polygons_gdf: gpd.GeoDataFrame
+        Water body polygons with missclassified waterbodies removed.
     """
-    crs = primary_threshold_polygons.crs
+    crs = polygons_gdf.crs
 
     if urban_mask_fp:
-        _log.info(
-            "Filtering out CBDs polygons from the primary and secondary threshold polygons..."
-        )
+        _log.info("Filteringpr out CBDs polygons from the water body polygons...")
         try:
             urban_mask = gpd.read_file(urban_mask_fp).to_crs(crs)
         except Exception as error:
             _log.exception(f"Could not read file {urban_mask_fp}")
+            _log.error(error)
             raise error
         else:
-            cbd_filtered_primary_threshold_polygons = filter_by_intersection(
-                gpd_data=primary_threshold_polygons,
+            cbd_filtered_polygons_gdf = filter_by_intersection(
+                gpd_data=polygons_gdf,
                 gpd_filter=urban_mask,
                 filtertype="intersects",
                 invert_mask=True,
@@ -227,28 +224,13 @@ def filter_using_urban_mask(
             )
 
             _log.info(
-                f"Filtered out {len(primary_threshold_polygons) - len(cbd_filtered_primary_threshold_polygons)} primary threshold polygons."
+                f"Filtered out {len(cbd_filtered_polygons_gdf) - len(polygons_gdf)} water body polygons."
             )
 
-            cbd_filtered_secondary_threshold_polygons = filter_by_intersection(
-                gpd_data=secondary_threshold_polygons,
-                gpd_filter=urban_mask,
-                filtertype="intersects",
-                invert_mask=True,
-                return_inverse=False,
-            )
-
-            _log.info(
-                f"Filtered out {len(secondary_threshold_polygons) - len(cbd_filtered_secondary_threshold_polygons)} secondary threshold polygons."
-            )
-
-            return (
-                cbd_filtered_primary_threshold_polygons,
-                cbd_filtered_secondary_threshold_polygons,
-            )
+            return cbd_filtered_polygons_gdf
     else:
         _log.info("Skipping filtering out CBDs step.")
-        return primary_threshold_polygons, secondary_threshold_polygons
+        return polygons_gdf
 
 
 def merge_primary_and_secondary_threshold_polygons(
