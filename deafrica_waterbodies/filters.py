@@ -413,7 +413,9 @@ def erode_dilate_v1(
     not_splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test > pp_test_threshold]
 
     if len(splittable_polygons) >= 1:
-        _log.info(f"Splitting {len(splittable_polygons)} polygons.")
+        _log.info(
+            f"Splitting {len(splittable_polygons)} out of {len(waterbody_polygons_)} polygons."
+        )
 
         # Buffer the polygons.
         splittable_polygons_buffered = splittable_polygons.buffer(-50)
@@ -481,7 +483,9 @@ def erode_dilate_v2(
     not_splittable_polygons = waterbody_polygons_[waterbody_polygons_.pp_test > pp_test_threshold]
 
     if len(splittable_polygons) >= 1:
-        _log.info(f"Splitting {len(splittable_polygons)} polygons.")
+        _log.info(
+            f"Splitting {len(splittable_polygons)} out of {len(waterbody_polygons_)} polygons."
+        )
 
         # Buffer the polygons.
         splittable_polygons_buffered = splittable_polygons.buffer(-100).buffer(125)
