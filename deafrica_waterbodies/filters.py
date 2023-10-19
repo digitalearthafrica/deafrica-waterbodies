@@ -90,7 +90,7 @@ def filter_by_intersection(
 
 
 def filter_by_area(
-    polygons_gdf: gpd.GeoDataFrame | None,
+    polygons_gdf: gpd.GeoDataFrame,
     min_polygon_size: float = 4500,
     max_polygon_size: float = math.inf,
 ) -> gpd.GeoDataFrame:
@@ -133,70 +133,53 @@ def filter_by_area(
 
 
 def filter_using_land_sea_mask(
-    primary_threshold_polygons: gpd.GeoDataFrame,
-    secondary_threshold_polygons: gpd.GeoDataFrame,
+    polygons_gdf: gpd.GeoDataFrame,
     land_sea_mask_fp: str | Path = "",
-) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+) -> gpd.GeoDataFrame:
     """
-    Filter the primary and secondary threshold waterbody polygons using a land/sea
-    mask to filter out ocean polygons.
+    Filter the water body polygons using a land/sea mask to filter out ocean polygons.
 
     Parameters
     ----------
-    primary_threshold_polygons : gpd.GeoDataFrame
-    secondary_threshold_polygons : gpd.GeoDataFrame
+    polygons_gdf : gpd.GeoDataFrame
     land_sea_mask_fp : str | Path, optional
         Vector file path to the polygons to use to filter out ocean waterbody polygons, by default ""
 
     Returns
     -------
-    tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-        The filtered primary threshold polygons and the filtered
-        secondary threshold polygons with ocean polygons removed.
+    gpd.GeoDataFrame:
+        The filtered water body polygons with ocean polygons removed.
     """
-    assert primary_threshold_polygons.crs == secondary_threshold_polygons.crs
-    crs = primary_threshold_polygons.crs
+    crs = polygons_gdf.crs
 
     # Support pathlib Paths
     land_sea_mask_fp = str(land_sea_mask_fp)
 
     if land_sea_mask_fp:
-        _log.info(
-            "Filtering out ocean polygons from the primary and secondary threshold waterbody polygons..."
-        )
+        _log.info("Filtering out ocean polygons from the water body polygons...")
         try:
             land_sea_mask = gpd.read_file(land_sea_mask_fp).to_crs(crs)
         except Exception as error:
             _log.exception(f"Could not read file {land_sea_mask_fp}")
+            _log.error(error)
             raise error
         else:
-            inland_primary_threshold_polygons = filter_by_intersection(
-                gpd_data=primary_threshold_polygons,
+            inland_polygons = filter_by_intersection(
+                gpd_data=polygons_gdf,
                 gpd_filter=land_sea_mask,
                 filtertype="intersects",
                 invert_mask=True,
                 return_inverse=False,
             )
             _log.info(
-                f"Filtered out {len(primary_threshold_polygons) - len(inland_primary_threshold_polygons)} primary threshold polygons."
+                f"Filtered out {len(polygons_gdf) - len(inland_polygons)} water body polygons."
             )
 
-            inland_secondary_threshold_polygons = filter_by_intersection(
-                gpd_data=secondary_threshold_polygons,
-                gpd_filter=land_sea_mask,
-                filtertype="intersects",
-                invert_mask=True,
-                return_inverse=False,
-            )
-            _log.info(
-                f"Filtered out {len(secondary_threshold_polygons) - len(inland_secondary_threshold_polygons)} secondary threshold polygons."
-            )
-
-            return inland_primary_threshold_polygons, inland_secondary_threshold_polygons
+            return (inland_polygons,)
 
     else:
         _log.info("Skipping filtering out ocean polygons step.")
-        return primary_threshold_polygons, secondary_threshold_polygons
+        return polygons_gdf
 
 
 def filter_using_urban_mask(
