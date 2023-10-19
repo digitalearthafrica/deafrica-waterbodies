@@ -285,3 +285,36 @@ def find_parquet_files(path: str | Path, pattern: str = ".*") -> [str]:
         pq_file_paths = [f"s3://{file}" for file in pq_file_paths]
 
     return pq_file_paths
+
+
+def convert_shapefile_2_parquet(shapefile_fp: str | Path):
+    """
+    Convert a shapefile to a parquet file.
+
+    Parameters
+    ----------
+    shapefile_fp : str | Path
+        File path or S3 URI of the shapefile to convert.
+
+    """
+    shapefile_fp = str(shapefile_fp)
+
+    # Get the parent directory of the shapefile.
+    dir_name = os.path.dirname(shapefile_fp)
+    # Get the file name of the shapefile without the file extenstion.
+    base_name = os.path.splitext(os.path.basename(shapefile_fp))[0]
+
+    # Get the parquet file path.
+    parquet_fp = os.path.join(dir_name, f"{base_name}.parquet")
+
+    # Read the shapefile.
+    try:
+        shapefile_gdf = gpd.read_file(shapefile_fp)
+    except Exception as error:
+        _log.exception(f"Could not read file {shapefile_fp}")
+        _log.error(error)
+        raise error
+
+    # Save the GeoDataFrame to a parquet file.
+    shapefile_gdf.to_parquet(parquet_fp)
+    _log.info(f"Saved to {parquet_fp}")
