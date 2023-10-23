@@ -6,24 +6,25 @@ from pathlib import Path
 import boto3
 import datacube
 import dateutil
+import fsspec
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from datacube.utils.geometry import Geometry
 from deafrica_tools.datahandling import wofs_fuser
 from deafrica_tools.spatial import xr_rasterize
-from mypy_boto3_s3.client import S3Client
 from odc.stats.model import DateTimeRange
 from tqdm.auto import tqdm
 
 from deafrica_waterbodies.id_field import guess_id_field
-from deafrica_waterbodies.io import check_dir_exists, check_file_exists
+from deafrica_waterbodies.io import check_dir_exists, check_file_exists, check_if_s3_uri
 
 _log = logging.getLogger(__name__)
 
 
 def get_polygon_ids_for_missing_timeseries(
-    polygons_gdf: gpd.GeoDataFrame, output_directory: str | Path, s3_client: S3Client | None = None
+    polygons_gdf: gpd.GeoDataFrame,
+    output_directory: str | Path,
 ) -> list[str]:
     """
     Get IDs for polygons whose timeseries .csv file does not exist
@@ -36,9 +37,6 @@ def get_polygon_ids_for_missing_timeseries(
     output_directory : str
         File URI or S3 URI of the directory containing the waterbody timeseries
         files.
-    s3_client : S3Client
-        A low-level client representing Amazon Simple Storage Service (S3), by default None.
-
     Returns
     -------
     list[str]
@@ -47,10 +45,6 @@ def get_polygon_ids_for_missing_timeseries(
     """
     # Support pathlib paths.
     output_directory = str(output_directory)
-
-    # Get the service client.
-    if s3_client is None:
-        s3_client = boto3.client("s3")
 
     polygon_ids = polygons_gdf.index.to_list()
 
@@ -70,7 +64,7 @@ def get_polygon_ids_for_missing_timeseries(
 
 
 def get_last_observation_date_from_csv(
-    csv_file_path: str | Path, s3_client: S3Client | None = None
+    csv_file_path: str | Path,
 ) -> pd.Timestamp:
     """
     Get the date of the last observation from a water body polygon's
@@ -80,32 +74,24 @@ def get_last_observation_date_from_csv(
     ----------
     csv_file_path : str | Path
         S3 URI or File URI of the timeseries csv file for a waterbody polygon.
-    s3_client : S3Client | None
-        A low-level client representing Amazon Simple Storage Service (S3), by default None.
-
     Returns
     -------
     pd.Timestamp
         Date of the last observation from a water body polygon's timeseries
         file.
     """
-    # Get the service client.
-    if s3_client is None:
-        s3_client = boto3.client("s3")
-
     # Check if the file exists.
     if check_file_exists(csv_file_path):
         # Read file using pandas.
         # Should work for s3 files also.
-        timeseries_df = pd.read_csv(csv_file_path)
+        df = pd.read_csv(csv_file_path)
 
-        # Convert to datetime.
-        timeseries_df["Observation Date"] = pd.to_datetime(timeseries_df["Observation Date"])
-
-        # Sort in acending order
-        timeseries_df.sort_values(by="Observation Date", ascending=True, inplace=True)
-
-        last_date = timeseries_df["Observation Date"].to_list()[-1]
+        if "date" not in df.columns:
+            df.sort_index(ascending=True, inplace=True)
+            last_date = df.index.to_list()[-1]
+        else:
+            df.sort_values(["date"], ascending=True, inplace=True)
+            last_date = df["date"].to_list()[-1]
 
         return last_date
     else:
@@ -157,8 +143,15 @@ def generate_timeseries_from_wofs_ls(
     waterbodies_vector_file = str(waterbodies_vector_file)
     output_directory = str(output_directory)
 
-    # Get the service client.
-    s3_client = boto3.client("s3")
+    # Create the output directory if it does not exist.
+    if not check_dir_exists(output_directory):
+        if check_if_s3_uri(output_directory):
+            fs = fsspec.filesystem("s3")
+        else:
+            fs = fsspec.filesystem("file")
+
+        fs.mkdirs(output_directory, exist_ok=True)
+        _log.info(f"Created directory {output_directory}")
 
     # We will be using wofs_ls data.
     output_crs = "EPSG:6933"
@@ -180,25 +173,24 @@ def generate_timeseries_from_wofs_ls(
     polygons_gdf = polygons_gdf.to_crs(output_crs)
     assert polygons_gdf.crs.is_projected
 
-    # Select polygons using polygons using values in the id column.
+    # Select polygons using values in the id column.
     if subset_polygons_ids:
         polygons_gdf = polygons_gdf.loc[subset_polygons_ids]
 
     # Get the IDs for the water body polygons with no timeseries csv file in the
     # output directory.
     if missing_only:
-        polygon_ids = get_polygon_ids_for_missing_timeseries(
-            polygons_gdf, output_directory, s3_client=s3_client
-        )
+        polygon_ids = get_polygon_ids_for_missing_timeseries(polygons_gdf, output_directory)
     else:
         polygon_ids = polygons_gdf.index.to_list()
 
     if not polygon_ids:
         _log.info("No polygons identified with missing timeseries.")
+        return []
     else:
         _log.info(f"Number of polygons to generate timeseries for {len(polygons_gdf)}.")
 
-        # Time span is mutually exclusive with start_date and end_date.
+        # Time span is mutually exclusive with temporal_range.
         valid_time_span_options = ["all", "custom", "append"]
 
         if time_span not in valid_time_span_options:
@@ -236,6 +228,7 @@ def generate_timeseries_from_wofs_ls(
         # Connect to the datacube
         dc = datacube.Datacube(app="deafricawaterbodies-timeseries")
 
+        generated_timeseries_fps = []
         with tqdm(total=len(polygon_ids)) as bar:
             for poly_id in polygon_ids:
                 # Polygon's timeseries file path.
@@ -244,7 +237,7 @@ def generate_timeseries_from_wofs_ls(
                 if time_span == "append":
                     try:
                         last_observation_date = get_last_observation_date_from_csv(
-                            poly_timeseries_fp, s3_client
+                            poly_timeseries_fp
                         )
                     except FileNotFoundError:
                         start_date_str = "1984"
@@ -282,7 +275,7 @@ def generate_timeseries_from_wofs_ls(
                 # If no data is found.
                 if not wofls_ds:
                     _log.info(
-                        f"There is data for {poly_id} for the time range: {time_range[0]} to {time_range[1]}."
+                        f"There is no data for {poly_id} for the time range: {time_range[0]} to {time_range[1]}."
                     )
                     continue
                 else:
@@ -407,8 +400,13 @@ def generate_timeseries_from_wofs_ls(
                         timeseries_df.to_csv(
                             poly_timeseries_fp, mode="a", index=False, header=False
                         )
+                        _log.info(f"Timeseries appended to csv file {poly_timeseries_fp}")
                     else:
                         # Write the DataFrame to a new csv file.
                         timeseries_df.to_csv(poly_timeseries_fp, mode="w", index=False)
+                        _log.info(f"Timeseries written to file {poly_timeseries_fp}")
+
+                    generated_timeseries_fps.append(poly_timeseries_fp)
                 bar.update(1)
-            _log.info(f"Done! Generated timeseries for {len(polygon_ids)}.")
+            _log.info(f"Done! Generated timeseries for {len(polygon_ids)} polygons.")
+            return generated_timeseries_fps
