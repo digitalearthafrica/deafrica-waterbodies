@@ -18,11 +18,7 @@ from mypy_boto3_s3.client import S3Client
 from tqdm.auto import tqdm
 
 from deafrica_waterbodies.id_field import guess_id_field
-from deafrica_waterbodies.io import (
-    check_dir_exists,
-    check_file_exists,
-    check_if_s3_uri,
-)
+from deafrica_waterbodies.io import check_dir_exists, check_file_exists
 
 _log = logging.getLogger(__name__)
 
