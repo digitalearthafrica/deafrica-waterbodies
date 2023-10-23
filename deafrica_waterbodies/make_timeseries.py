@@ -231,8 +231,14 @@ def generate_timeseries_from_wofs_ls(
         generated_timeseries_fps = []
         with tqdm(total=len(polygon_ids)) as bar:
             for poly_id in polygon_ids:
+                # Parent directory for csv files.
+                poly_timeseries_parent_dir = os.path.join(output_directory, poly_id[:4])
+                if not check_dir_exists(poly_timeseries_parent_dir):
+                    fs.mkdirs(poly_timeseries_parent_dir, exist_ok=True)
+                    _log.info(f"Created directory {poly_timeseries_parent_dir}")
+
                 # Polygon's timeseries file path.
-                poly_timeseries_fp = os.path.join(output_directory, poly_id[:4], f"{poly_id}.csv")
+                poly_timeseries_fp = os.path.join(poly_timeseries_parent_dir, f"{poly_id}.csv")
 
                 if time_span == "append":
                     try:
