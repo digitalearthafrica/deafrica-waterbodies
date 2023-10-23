@@ -3,7 +3,6 @@ import logging
 import os
 from pathlib import Path
 
-import boto3
 import datacube
 import dateutil
 import fsspec
@@ -234,6 +233,10 @@ def generate_timeseries_from_wofs_ls(
                 # Parent directory for csv files.
                 poly_timeseries_parent_dir = os.path.join(output_directory, poly_id[:4])
                 if not check_dir_exists(poly_timeseries_parent_dir):
+                    if check_if_s3_uri(poly_timeseries_parent_dir):
+                        fs = fsspec.filesystem("s3")
+                    else:
+                        fs = fsspec.filesystem("file")
                     fs.mkdirs(poly_timeseries_parent_dir, exist_ok=True)
                     _log.info(f"Created directory {poly_timeseries_parent_dir}")
 
