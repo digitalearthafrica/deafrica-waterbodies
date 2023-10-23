@@ -169,7 +169,7 @@ def generate_timeseries_from_wofs_ls(
     # We will be using wofs_ls data.
     output_crs = "EPSG:6933"
     resolution = (-30, 30)
-    # dask_chunks = {"x": 3200, "y": 3200, "time": 1} # TODO: Check if using dask speeds up runtime.
+    dask_chunks = {"x": 3200, "y": 3200, "time": 1}
 
     # Load the waterbody polygons.
     try:
@@ -274,6 +274,7 @@ def generate_timeseries_from_wofs_ls(
                 time=time_range,
                 resolution=resolution,
                 output_crs=output_crs,
+                dask_chunks=dask_chunks,
                 resampling="nearest",
                 group_by="solar_day",
                 fuse_func=wofs_fuser,
@@ -309,7 +310,7 @@ def generate_timeseries_from_wofs_ls(
                     wofl = wofls_da_masked.sel(time=timestep)
 
                     # Number of pixels in the timestep for the water body.
-                    pixel_count = np.count_nonzero(np.isnan(wofl))
+                    pixel_count = np.count_nonzero(~np.isnan(wofl))
 
                     # Apply WOfS bitmasking to the Water Observation Feature Layers
                     # See: the  Applying WOfS Bitmasking notebook in the
