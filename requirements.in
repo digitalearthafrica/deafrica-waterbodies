@@ -10,6 +10,7 @@ gdal
 geopandas
 numpy
 odc-dscache --extra-index-url="https://packages.dea.ga.gov.au"
+odc-stats
 pandas
 python-dateutil
 python-geohash

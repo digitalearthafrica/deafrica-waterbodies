@@ -12,6 +12,7 @@ affine==2.4.0
     #   eodatasets3
     #   odc-algo
     #   odc-geo
+    #   odc-stac
     #   rasterio
     #   rasterstats
 aiobotocore[boto3]==2.7.0
@@ -52,7 +53,7 @@ attrs==23.1.0
     #   jsonschema
     #   rasterio
     #   sarif-om
-aws-sam-translator==1.78.0
+aws-sam-translator==1.79.0
     # via cfn-lint
 aws-xray-sdk==2.12.1
     # via moto
@@ -62,7 +63,7 @@ backcall==0.2.0
     # via ipython
 beautifulsoup4==4.12.2
     # via nbconvert
-black==23.10.0
+black==23.10.1
     # via
     #   -r requirements.in
     #   deafrica-tools
@@ -81,7 +82,7 @@ boto3==1.28.64
     #   eodatasets3
     #   moto
     #   odc-cloud
-boto3-stubs[s3,sqs]==1.28.65
+boto3-stubs[s3,sqs]==1.28.69
     # via -r requirements.in
 botocore==1.31.64
     # via
@@ -93,8 +94,9 @@ botocore==1.31.64
     #   eodatasets3
     #   moto
     #   odc-cloud
+    #   odc-stats
     #   s3transfer
-botocore-stubs==1.31.65
+botocore-stubs==1.31.69
     # via boto3-stubs
 bottleneck==1.3.7
     # via datacube
@@ -120,11 +122,11 @@ cffi==1.16.0
     # via
     #   argon2-cffi-bindings
     #   cryptography
-cfn-lint==0.82.1
+cfn-lint==0.83.0
     # via moto
-cftime==1.6.2
+cftime==1.6.3
     # via netcdf4
-charset-normalizer==3.3.0
+charset-normalizer==3.3.1
     # via
     #   aiohttp
     #   requests
@@ -132,6 +134,7 @@ ciso8601==2.3.0
     # via
     #   datacube
     #   eodatasets3
+    #   odc-stats
 click==8.1.7
     # via
     #   -r requirements.in
@@ -146,6 +149,7 @@ click==8.1.7
     #   fiona
     #   odc-apps-dc-tools
     #   odc-dscache
+    #   odc-stats
     #   rasterio
     #   rasterstats
 click-plugins==1.1.1
@@ -188,6 +192,8 @@ dask[array,complete,dataframe,diagnostics,distributed]==2023.10.0
     #   deafrica-tools
     #   distributed
     #   odc-algo
+    #   odc-stac
+    #   odc-stats
 dask-gateway==2023.9.0
     # via deafrica-tools
 dask-glm==0.3.0
@@ -204,6 +210,7 @@ datacube[performance,s3]==1.8.16
     #   odc-algo
     #   odc-apps-dc-tools
     #   odc-dscache
+    #   odc-stats
     #   odc-ui
 datadog==0.47.0
     # via odc-apps-dc-tools
@@ -227,6 +234,7 @@ distributed==2023.10.0
     #   dask-ml
     #   datacube
     #   odc-algo
+    #   odc-stats
 docker==6.1.3
     # via moto
 ecdsa==0.18.0
@@ -235,7 +243,9 @@ ecdsa==0.18.0
     #   python-jose
     #   sshpubkeys
 eodatasets3==0.29.7
-    # via odc-apps-dc-tools
+    # via
+    #   odc-apps-dc-tools
+    #   odc-stats
 exceptiongroup==1.1.3
     # via
     #   anyio
@@ -250,6 +260,7 @@ fiona==1.9.5
     # via
     #   deafrica-tools
     #   geopandas
+    #   odc-stats
     #   rasterstats
 flake8==6.0.0
     # via
@@ -265,17 +276,19 @@ frozenlist==1.4.0
     # via
     #   aiohttp
     #   aiosignal
-fsspec==2023.9.2
+fsspec==2023.10.0
     # via
     #   -r requirements.in
     #   dask
     #   deafrica-tools
     #   odc-apps-dc-tools
+    #   odc-stats
 gdal==3.6.3
     # via
     #   -r requirements.in
     #   deafrica-tools
-geoalchemy2==0.14.1
+    #   odc-stats
+geoalchemy2==0.14.2
     # via datacube
 geographiclib==2.0
     # via geopy
@@ -302,7 +315,7 @@ idna==3.4
     #   moto
     #   requests
     #   yarl
-imageio==2.31.5
+imageio==2.31.6
     # via
     #   pims
     #   scikit-image
@@ -431,13 +444,13 @@ jupyterlab-widgets==3.0.9
     # via ipywidgets
 kiwisolver==1.4.5
     # via matplotlib
-lark==1.1.7
+lark==1.1.8
     # via datacube
 lazy-loader==0.3
     # via scikit-image
 lazy-object-proxy==1.9.0
     # via openapi-spec-validator
-llvmlite==0.41.0
+llvmlite==0.41.1
     # via numba
 lmdb==1.4.1
     # via odc-dscache
@@ -506,13 +519,13 @@ netcdf4==1.6.4
     # via
     #   datacube
     #   pytmd
-networkx==3.1
+networkx==3.2
     # via
     #   cfn-lint
     #   scikit-image
 notebook-shim==0.2.3
     # via jupyterlab
-numba==0.58.0
+numba==0.58.1
     # via
     #   dask-ml
     #   sparse
@@ -520,7 +533,7 @@ numexpr==2.8.7
     # via
     #   deafrica-tools
     #   odc-algo
-numpy==1.25.2
+numpy==1.26.1
     # via
     #   -r requirements.in
     #   bokeh
@@ -543,6 +556,8 @@ numpy==1.25.2
     #   numexpr
     #   odc-algo
     #   odc-geo
+    #   odc-stac
+    #   odc-stats
     #   odc-ui
     #   pandas
     #   pims
@@ -562,17 +577,30 @@ numpy==1.25.2
 odc-algo==0.2.3
     # via
     #   deafrica-tools
+    #   odc-stats
     #   odc-ui
 odc-apps-dc-tools==0.2.14
     # via -r requirements.in
 odc-cloud[async]==0.2.3
-    # via odc-apps-dc-tools
+    # via
+    #   odc-apps-dc-tools
+    #   odc-stats
 odc-dscache==0.2.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   odc-stats
 odc-geo==0.4.1
-    # via deafrica-tools
+    # via
+    #   deafrica-tools
+    #   odc-stac
 odc-io==0.2.1
-    # via odc-apps-dc-tools
+    # via
+    #   odc-apps-dc-tools
+    #   odc-stats
+odc-stac==0.3.7
+    # via odc-stats
+odc-stats==1.0.35
+    # via -r requirements.in
 odc-ui==0.2.1.dev3676
     # via deafrica-tools
 openapi-schema-validator==0.4.4
@@ -616,6 +644,8 @@ pandas==2.1.1
     #   deafrica-tools
     #   geopandas
     #   odc-dscache
+    #   odc-stac
+    #   odc-stats
     #   odc-ui
     #   seaborn
     #   xarray
@@ -637,7 +667,7 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
-pillow==10.1.0
+pillow==10.0.1
     # via
     #   bokeh
     #   imageio
@@ -708,6 +738,8 @@ pystac[validation]==1.8.3
     # via
     #   eodatasets3
     #   odc-apps-dc-tools
+    #   odc-stac
+    #   odc-stats
     #   pystac-client
     #   rio-stac
 pystac-client==0.7.5
@@ -767,12 +799,14 @@ pyzmq==25.1.1
     #   ipykernel
     #   jupyter-client
     #   jupyter-server
-rasterio==1.3.8.post2
+rasterio==1.3.9
     # via
     #   datacube
     #   deafrica-tools
     #   eodatasets3
     #   odc-algo
+    #   odc-stac
+    #   odc-stats
     #   odc-ui
     #   rasterstats
     #   rio-stac
@@ -808,7 +842,7 @@ rio-stac==0.8.1
     # via odc-apps-dc-tools
 rsa==4.9
     # via python-jose
-ruamel-yaml==0.17.35
+ruamel-yaml==0.18.1
     # via
     #   datacube
     #   eodatasets3
@@ -822,7 +856,7 @@ scikit-image==0.22.0
     # via
     #   deafrica-tools
     #   odc-algo
-scikit-learn==1.3.1
+scikit-learn==1.3.2
     # via
     #   dask-glm
     #   dask-ml
@@ -890,7 +924,7 @@ structlog==23.2.0
     # via eodatasets3
 sympy==1.12
     # via cfn-lint
-tblib==2.0.0
+tblib==3.0.0
     # via distributed
 terminado==0.17.1
     # via
@@ -918,6 +952,8 @@ toolz==0.12.0
     #   odc-algo
     #   odc-apps-dc-tools
     #   odc-dscache
+    #   odc-stac
+    #   odc-stats
     #   partd
 tornado==6.3.3
     # via
@@ -933,6 +969,7 @@ tqdm==4.66.1
     # via
     #   -r requirements.in
     #   deafrica-tools
+    #   odc-stats
 traitlets==5.11.2
     # via
     #   comm
@@ -1005,12 +1042,14 @@ wrapt==1.15.0
     #   aiobotocore
     #   aws-xray-sdk
     #   deprecat
-xarray==2023.9.0
+xarray==2023.10.1
     # via
     #   datacube
     #   deafrica-tools
     #   eodatasets3
     #   odc-algo
+    #   odc-stac
+    #   odc-stats
     #   odc-ui
 xmltodict==0.13.0
     # via moto

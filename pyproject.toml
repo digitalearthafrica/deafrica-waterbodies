@@ -36,6 +36,7 @@ dependencies = [
     'geopandas',
     'numpy',
     'odc-dscache',
+    'odc-stats',
     'pandas',
     'python-dateutil',
     'python-geohash',
