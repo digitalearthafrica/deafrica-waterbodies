@@ -1,5 +1,17 @@
+import logging
+import os
+from urllib.parse import urlparse
+
+import boto3
 import geohash as gh
 import geopandas as gpd
+from botocore import UNSIGNED
+from botocore.client import Config
+from botocore.exceptions import NoCredentialsError
+
+from deafrica_waterbodies.io import check_if_s3_uri
+
+_log = logging.getLogger(__name__)
 
 
 def assign_unique_ids(polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -47,76 +59,145 @@ def assign_unique_ids(polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return polygons_with_unique_ids_sorted
 
 
-def get_timeseries_s3_object_url(
+def get_timeseries_s3_url(
     uid: str,
-    product_version: str,
-    timeseries_bucket: str,
+    timeseries_product_version: str,
+    bucket_name: str,
+    region_code: str,
+    object_prefix: str,
 ) -> str:
     """
-    Get the timeseries s3 object URL given a unique identifier for a polygon.
+    Get the timeseries S3 Object URL given the unique identifier for a polygon.
 
     Parameters
     ----------
     uid : str
         Unique identifier
-    product_version : str
-        The product version for the DE Africa Waterbodies service.
-    timeseries_bucket : str
-        The s3 bucket for the DE Africa Waterbodies service timeseries.
+    timeseries_product_version : str
+        The product version for the DE Africa Waterbodies timeseries.
+    bucket_name : str
+        The S3 bucket containing the timeseries csv files.
+    region_code:
+        The location of the S3 bucket specified by `bucket_name`.
+    object_prefix:
+        The folder on S3 containing the timeseries csv files.
 
     Returns
     -------
     str
-        A s3 object URL for the timeseries for a waterbody polygon.
+        A S3 Object URL for the timeseries for a waterbody polygon.
     """
 
-    # Incase storage location is local.
-    if timeseries_bucket is None:
-        timeseries_bucket == "deafrica-waterbodies-dev"
-
-    version = product_version.replace(".", "-")
-
+    version = timeseries_product_version.replace(".", "_")
     subfolder = uid[:4]
+    csv_file = f"{uid}_v{version}.csv"
 
-    csv_file = f"{uid}.csv"
-
-    timeseries_s3_object_url = f"https://{timeseries_bucket}.s3.af-south-1.amazonaws.com/{version}/timeseries/{subfolder}/{csv_file}"
+    # Construct the S3 Object URL
+    timeseries_s3_object_url = f"https://{bucket_name}.s3.{region_code}.amazonaws.com/{object_prefix}/{subfolder}/{csv_file}"
 
     return timeseries_s3_object_url
 
 
+def get_timeseries_fp(
+    uid: str,
+    timeseries_product_version: str,
+    timeseries_dir: str,
+) -> str:
+    """
+    Get the timeseries file path given the unique identifier for a polygon.
+
+    Parameters
+    ----------
+    uid : str
+        Polygon unique identifier
+    timeseries_product_version : str
+        The product version for the DE Africa Waterbodies timeseries.
+    timeseries_dir : str
+        The directory containing the DE Africa Waterbodies timeseries csv files.
+
+    Returns
+    -------
+    str
+        A file path for the timeseries for a waterbody polygon.
+    """
+
+    version = timeseries_product_version.replace(".", "_")
+    subfolder = uid[:4]
+    csv_file = f"{uid}_v{version}.csv"
+
+    # Construct the file path
+    timeseries_fp = os.path.join(timeseries_dir, {subfolder}, {csv_file})
+
+    return timeseries_fp
+
+
 def add_timeseries_attribute(
-    polygons: gpd.GeoDataFrame, product_version: str, timeseries_bucket: str
+    polygons: gpd.GeoDataFrame,
+    timeseries_product_version: str,
+    timeseries_dir: str,
 ) -> gpd.GeoDataFrame:
     """
-    Function to assign the s3 object URL for the timeseries for each waterbody polygon.
+    Function to assign a file path or S3 Object URL for the timeseries for each waterbody polygon.
 
     Parameters
     ----------
     polygons : gpd.GeoDataFrame
         GeoDataFrame containing the waterbody polygons.
-    product_version : str
-        The product version for the DE Africa Waterbodies service.
-    timeseries_bucket : str
-        The s3 bucket for the DE Africa Waterbodies service timeseries.
+    timeseries_product_version : str
+        The product version for the DE Africa Waterbodies timeseries.
+    timeseries_dir : str
+        The directory containing the DE Africa Waterbodies timeseries csv files.
 
     Returns
     -------
     gpd.GeoDataFrame
         GeoDataFrame containing the waterbody polygons with an additional
         column "timeseries".
-        The "timeseries" column contains the s3 object URL for the timeseries for each
+        The "timeseries" column contains the file path or S3 Object URL for the timeseries for each
         of the waterbody polygons.
     """
+    if check_if_s3_uri(timeseries_dir):
+        # Parse the S3 URI.
+        parsed = urlparse(timeseries_dir, allow_fragments=False)
+        bucket_name = parsed.netloc
+        object_prefix = parsed.path.lstrip("/").rstrip("/")
 
-    polygons["timeseries"] = polygons.apply(
-        lambda row: get_timeseries_s3_object_url(
-            uid=row["UID"],
-            product_version=product_version,
-            timeseries_bucket=timeseries_bucket,
-        ),
-        axis=1,
-    )
+        # Get the bucket location.
+        try:
+            # Get the service client.
+            s3_client = boto3.client("s3")
+            region_code = s3_client.get_bucket_location(Bucket=bucket_name)["LocationConstraint"]
+        except NoCredentialsError:
+            try:
+                # Try with unisigned request.
+                s3_client = boto3.client("s3", config=Config(signature_version=UNSIGNED))
+                region_code = s3_client.get_bucket_location(Bucket=bucket_name)[
+                    "LocationConstraint"
+                ]
+            except Exception as error:
+                _log.error(error)
+                raise error
+
+        polygons["timeseries"] = polygons.apply(
+            lambda row: get_timeseries_s3_url(
+                uid=row["UID"],
+                timeseries_product_version=timeseries_product_version,
+                bucket_name=bucket_name,
+                region_code=region_code,
+                object_prefix=object_prefix,
+            ),
+            axis=1,
+        )
+    else:
+        polygons["timeseries"] = polygons.apply(
+            lambda row: get_timeseries_fp(
+                uid=row["UID"],
+                timeseries_product_version=timeseries_product_version,
+                timeseries_dir=timeseries_dir,
+            ),
+            axis=1,
+        )
+
     return polygons
 
 
