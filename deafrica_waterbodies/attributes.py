@@ -78,7 +78,7 @@ def get_timeseries_s3_object_url(
 
     subfolder = uid[:4]
 
-    csv_file = f"{uid}_v{version[0]}.csv"
+    csv_file = f"{uid}.csv"
 
     timeseries_s3_object_url = f"https://{timeseries_bucket}.s3.af-south-1.amazonaws.com/{version}/timeseries/{subfolder}/{csv_file}"
 
