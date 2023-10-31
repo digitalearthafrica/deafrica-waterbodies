@@ -2,12 +2,8 @@ import logging
 import os
 from urllib.parse import urlparse
 
-import boto3
 import geohash as gh
 import geopandas as gpd
-from botocore import UNSIGNED
-from botocore.client import Config
-from botocore.exceptions import NoCredentialsError
 
 from deafrica_waterbodies.io import check_if_s3_uri
 
@@ -135,6 +131,7 @@ def add_timeseries_attribute(
     polygons: gpd.GeoDataFrame,
     timeseries_product_version: str,
     timeseries_dir: str,
+    region_code: str = "af-south-1",
 ) -> gpd.GeoDataFrame:
     """
     Function to assign a file path or S3 Object URL for the timeseries for each waterbody polygon.
@@ -147,6 +144,8 @@ def add_timeseries_attribute(
         The product version for the DE Africa Waterbodies timeseries.
     timeseries_dir : str
         The directory containing the DE Africa Waterbodies timeseries csv files.
+    region_code: str
+        This is the location of the bucket if `timeseries_dir` is a S3 URI.
 
     Returns
     -------
@@ -160,23 +159,7 @@ def add_timeseries_attribute(
         # Parse the S3 URI.
         parsed = urlparse(timeseries_dir, allow_fragments=False)
         bucket_name = parsed.netloc
-        object_prefix = parsed.path.lstrip("/").rstrip("/")
-
-        # Get the bucket location.
-        try:
-            # Get the service client.
-            s3_client = boto3.client("s3")
-            region_code = s3_client.get_bucket_location(Bucket=bucket_name)["LocationConstraint"]
-        except NoCredentialsError:
-            try:
-                # Try with unisigned request.
-                s3_client = boto3.client("s3", config=Config(signature_version=UNSIGNED))
-                region_code = s3_client.get_bucket_location(Bucket=bucket_name)[
-                    "LocationConstraint"
-                ]
-            except Exception as error:
-                _log.error(error)
-                raise error
+        object_prefix = parsed.path.strip("/")
 
         polygons["timeseries"] = polygons.apply(
             lambda row: get_timeseries_s3_url(
