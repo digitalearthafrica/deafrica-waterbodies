@@ -83,10 +83,10 @@ def get_timeseries_s3_url(
     str
         A S3 Object URL for the timeseries for a waterbody polygon.
     """
+    assert timeseries_product_version.startswith("v")
 
-    version = timeseries_product_version.replace(".", "_")
     subfolder = uid[:4]
-    csv_file = f"{uid}_v{version}.csv"
+    csv_file = f"{uid}_{timeseries_product_version}.csv"
 
     # Construct the S3 Object URL
     timeseries_s3_object_url = f"https://{bucket_name}.s3.{region_code}.amazonaws.com/{object_prefix}/{subfolder}/{csv_file}"
@@ -97,7 +97,7 @@ def get_timeseries_s3_url(
 def get_timeseries_fp(
     uid: str,
     timeseries_product_version: str,
-    timeseries_dir: str,
+    timeseries_directory: str,
 ) -> str:
     """
     Get the timeseries file path given the unique identifier for a polygon.
@@ -108,7 +108,7 @@ def get_timeseries_fp(
         Polygon unique identifier
     timeseries_product_version : str
         The product version for the DE Africa Waterbodies timeseries.
-    timeseries_dir : str
+    timeseries_directory : str
         The directory containing the DE Africa Waterbodies timeseries csv files.
 
     Returns
@@ -116,13 +116,13 @@ def get_timeseries_fp(
     str
         A file path for the timeseries for a waterbody polygon.
     """
+    assert timeseries_product_version.startswith("v")
 
-    version = timeseries_product_version.replace(".", "_")
     subfolder = uid[:4]
-    csv_file = f"{uid}_v{version}.csv"
+    csv_file = f"{uid}_{timeseries_product_version}.csv"
 
     # Construct the file path
-    timeseries_fp = os.path.join(timeseries_dir, {subfolder}, {csv_file})
+    timeseries_fp = os.path.join(timeseries_directory, {subfolder}, {csv_file})
 
     return timeseries_fp
 
@@ -130,7 +130,7 @@ def get_timeseries_fp(
 def add_timeseries_attribute(
     polygons: gpd.GeoDataFrame,
     timeseries_product_version: str,
-    timeseries_dir: str,
+    timeseries_directory: str,
     region_code: str = "af-south-1",
 ) -> gpd.GeoDataFrame:
     """
@@ -142,7 +142,7 @@ def add_timeseries_attribute(
         GeoDataFrame containing the waterbody polygons.
     timeseries_product_version : str
         The product version for the DE Africa Waterbodies timeseries.
-    timeseries_dir : str
+    timeseries_directory : str
         The directory containing the DE Africa Waterbodies timeseries csv files.
     region_code: str
         This is the location of the bucket if `timeseries_dir` is a S3 URI.
@@ -155,9 +155,9 @@ def add_timeseries_attribute(
         The "timeseries" column contains the file path or S3 Object URL for the timeseries for each
         of the waterbody polygons.
     """
-    if check_if_s3_uri(timeseries_dir):
+    if check_if_s3_uri(timeseries_directory):
         # Parse the S3 URI.
-        parsed = urlparse(timeseries_dir, allow_fragments=False)
+        parsed = urlparse(timeseries_directory, allow_fragments=False)
         bucket_name = parsed.netloc
         object_prefix = parsed.path.strip("/")
 
@@ -176,7 +176,7 @@ def add_timeseries_attribute(
             lambda row: get_timeseries_fp(
                 uid=row["UID"],
                 timeseries_product_version=timeseries_product_version,
-                timeseries_dir=timeseries_dir,
+                timeseries_directory=timeseries_directory,
             ),
             axis=1,
         )

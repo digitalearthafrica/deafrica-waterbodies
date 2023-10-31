@@ -201,7 +201,9 @@ def write_waterbodies_to_file(
     file_name_prefix: str, optional
         Prefix to use when naming the output file(s).
     """
-    output_fn = f"{file_name_prefix}v{product_version.replace('.', '_')}.shp"
+    assert product_version.startswith("v")
+
+    output_fn = f"{file_name_prefix}_{product_version}.shp"
     output_fp = os.path.join(output_directory, output_fn)
 
     if check_if_s3_uri(output_directory):
