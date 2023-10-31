@@ -183,7 +183,6 @@ def upload_file_to_s3(
 
 def write_waterbodies_to_file(
     waterbodies_gdf: gpd.GeoDataFrame,
-    product_version: str,
     output_directory: str | Path,
     file_name_prefix: str = "waterbodies",
 ):
@@ -194,16 +193,12 @@ def write_waterbodies_to_file(
     ----------
     waterbodies_gdf : gpd.GeoDataFrame
         The waterbody polygons.
-    product_version: str,
-        The DE Africa Waterbodies service product version.
     output_directory : str | Path,
         S3 URI or File URI of the directory to write the waterbody polygons to.
     file_name_prefix: str, optional
         Prefix to use when naming the output file(s).
     """
-    assert product_version.startswith("v")
-
-    output_fn = f"{file_name_prefix}_{product_version}.shp"
+    output_fn = f"{file_name_prefix}.shp"
     output_fp = os.path.join(output_directory, output_fn)
 
     if check_if_s3_uri(output_directory):
