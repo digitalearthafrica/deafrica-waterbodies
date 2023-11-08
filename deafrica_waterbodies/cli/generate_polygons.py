@@ -20,6 +20,7 @@ from deafrica_waterbodies.io import (
     check_file_exists,
     check_if_s3_uri,
     find_parquet_files,
+    write_waterbodies_to_file,
 )
 from deafrica_waterbodies.make_polygons import (
     merge_polygons_at_tile_boundaries,
@@ -95,16 +96,9 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
     help="Directory to write the water body polygons to.",
 )
 @click.option(
-    "--product-version",
+    "--timeseries-directory",
     type=str,
-    default="0.0.2",
-    show_default=True,
-    help="Product version for the DE Africa Waterbodies product.",
-)
-@click.option(
-    "--timeseries-bucket",
-    type=str,
-    help="The s3 bucket to containing the timeseries for the polygons.",
+    help="The path to the directory containing the timeseries for the polygons.",
 )
 @click.option(
     "--file-name-prefix",
@@ -119,13 +113,12 @@ def generate_polygons(
     detection_threshold,
     extent_threshold,
     min_valid_observations,
-    plugin_name,
+    raster_processing_plugin_name,
     output_directory,
     overwrite,
     min_polygon_size,
     max_polygon_size,
-    product_version,
-    timeseries_bucket,
+    timeseries_directory,
     file_name_prefix,
 ):
     # Set up logger.
@@ -176,9 +169,9 @@ def generate_polygons(
     )
 
     # Set filters to apply during raster processing.
-    if plugin_name is not None:
+    if raster_processing_plugin_name is not None:
         # Read the plugin as a Python module.
-        module = import_module(f"deafrica_waterbodies.plugins.{plugin_name}")
+        module = import_module(f"deafrica_waterbodies.plugins.{raster_processing_plugin_name}")
         plugin_file = module.__file__
         plugin = run_plugin(plugin_file)
         _log.info(f"Using plugin {plugin_file}")
@@ -292,6 +285,16 @@ def generate_polygons(
     waterbodies_gdf = add_area_and_perimeter_attributes(polygons=waterbodies_gdf)
     waterbodies_gdf = add_timeseries_attribute(
         polygons=waterbodies_gdf,
-        product_version=product_version,
-        timeseries_bucket=timeseries_bucket,
+        timeseries_directory=timeseries_directory,
+        region_code="af-south-1",
+    )
+
+    # Reproject to EPSG:4326
+    waterbodies_gdf_4326 = waterbodies_gdf.to_crs("EPSG:4326")
+
+    # Write to disk.
+    write_waterbodies_to_file(
+        waterbodies_gdf=waterbodies_gdf_4326,
+        output_directory=output_directory,
+        file_name_prefix=file_name_prefix,
     )
