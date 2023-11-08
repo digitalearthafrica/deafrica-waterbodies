@@ -9,7 +9,6 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import xarray as xr
 from shapely.geometry import MultiPolygon, Polygon
 
 _log = logging.getLogger(__name__)
@@ -618,15 +617,6 @@ def fill_holes(geom: Polygon | MultiPolygon) -> Polygon | MultiPolygon:
             return largest_polygon
     elif isinstance(geom, Polygon):
         return remove_polygon_interiors(geom)
-
-
-def filter_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
-    """
-    Function to filter the HydroSHEDs Land Mask into a boolean mask.
-    """
-    # Indicator values: 1 = land, 2 = ocean sink, 3 = inland sink, 255 is no data.
-    boolean_mask = (hydrosheds_land_mask != 255) & (hydrosheds_land_mask != 2)
-    return boolean_mask
 
 
 def remove_polygons_within_polygons(polygons_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:

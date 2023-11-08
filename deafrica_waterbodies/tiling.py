@@ -134,7 +134,7 @@ def tile_wofs_ls_summary_alltime(
     return tiles, gw
 
 
-def get_tiles(
+def get_wofs_ls_summary_alltime_tiles(
     aoi_gdf: gpd.GeoDataFrame | None, tile_size_factor: float = 2, num_workers: int = 8
 ) -> tuple[dict, datacube.api.GridWorkflow]:
     """
@@ -148,7 +148,7 @@ def get_tiles(
     tile_size_factor : float, optional
         Number of times to increase the regular tile size when tiling the
         wofs_ls_summary_alltime product by, by default 2
-    num_workers : int, datasetsoptional
+    num_workers : int, optional
         Number of worker processes to use when filtering tiles, by default 8
     Returns
     -------
