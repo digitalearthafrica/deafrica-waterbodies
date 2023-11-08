@@ -2,9 +2,7 @@ import click
 from datacube.ui.click import parse_expressions
 
 from deafrica_waterbodies.cli.logs import logging_setup
-from deafrica_waterbodies.waterbodies.timeseries.make_timeseries import (
-    generate_timeseries_from_wofs_ls,
-)
+from deafrica_waterbodies.make_timeseries import generate_timeseries_from_wofs_ls
 
 
 @click.command(
