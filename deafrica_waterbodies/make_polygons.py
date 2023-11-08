@@ -164,10 +164,10 @@ def load_wofs_frequency(
         File path to raster to use to mask ocean pixels in WOfS data, by default ""
     resampling_method: str, optional
         Resampling method to use when loading the land sea mask raster, by default "bilinear"
-    filter_land_sea_mask: Callable, optional
+    filter_land_sea_mask: Callable,
         Function to apply to the land sea mask xr.DataArray to generate a boolean
         mask where pixels with a value of True are land pixels and pixels with a
-        value of False are ocean pixels, by default `filter_hydrosheds_land_mask`
+        value of False are ocean pixels.
 
     Returns
     -------

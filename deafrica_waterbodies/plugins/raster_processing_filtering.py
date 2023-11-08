@@ -1,7 +1,9 @@
 """
-Plugin used to produce the DE Africa Waterbodies service polygons version
+Raster processing
 """
 import xarray as xr
+
+land_sea_mask_fp = "/g/data/deafrica-waterbodies/masks/af_msk_3s.tif"
 
 
 def filter_land_sea_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:

@@ -3,7 +3,6 @@ import os
 from importlib import import_module
 
 import click
-import datacube
 import fsspec
 import geopandas as gpd
 import pandas as pd
@@ -140,13 +139,20 @@ def generate_polygons(
         detection_threshold=detection_threshold, extent_threshold=extent_threshold
     )
 
+    # Set filters to apply during raster processing.
     if plugin_name is not None:
         # Read the plugin as a Python module.
-        module = import_module(f"deafrica_conflux.plugins.{plugin_name}")
+        module = import_module(f"deafrica_waterbodies.plugins.{plugin_name}")
         plugin_file = module.__file__
         plugin = run_plugin(plugin_file)
         _log.info(f"Using plugin {plugin_file}")
         validate_plugin(plugin)
+
+        land_sea_mask_fp = plugin.land_sea_mask_fp
+        filter_land_sea_mask = plugin.filter_land_sea_mask
+    else:
+        land_sea_mask_fp = ""
+        filter_land_sea_mask = None
 
     # Generate the first set of polygons for each of the tiles.
     for tile in tiles.items():
@@ -173,7 +179,7 @@ def generate_polygons(
                     min_valid_observations=min_valid_observations,
                     min_wet_thresholds=min_wet_thresholds,
                     land_sea_mask_fp=land_sea_mask_fp,
-                    filter_land_sea_mask=filter_hydrosheds_land_mask,
+                    filter_land_sea_mask=filter_land_sea_mask,
                 )
                 if raster_polygons.empty:
                     _log.info(f"Tile {str(tile_id)} contains no water body polygons.")
@@ -188,3 +194,46 @@ def generate_polygons(
             except Exception as error:
                 _log.exception(f"\nTile {str(tile_id)} did not run. \n")
                 _log.exception(error)
+
+    # Get the extent for each tile.
+    crs = grid_workflow.grid_spec.crs
+    tile_ids = [tile[0] for tile in tiles.items()]
+    tile_extents_geoms = [tile[1].geobox.extent.geom for tile in tiles.items()]
+    tile_extents_gdf = gpd.GeoDataFrame(
+        {"tile_id": tile_ids, "geometry": tile_extents_geoms}, crs=crs
+    )
+
+    tile_extents_fp = os.path.join(output_directory, "tile_boundaries.parquet")
+
+    tile_extents_gdf.to_parquet(tile_extents_fp)
+    _log.info(f"Tile boundaries written to {tile_extents_fp}")
+
+    # Find all parquet files for the first set of polygons.
+    raster_polygon_paths = find_parquet_files(
+        path=polygons_from_thresholds_dir, pattern=".*raster_polygons.*"
+    )
+    _log.info(f"Found {len(raster_polygon_paths)} parquet files for the raster polygons.")
+
+    # Load all polygons into a single GeoDataFrame.
+    _log.info("Loading the raster polygons parquet files..")
+    raster_polygon_polygons_list = []
+    for path in raster_polygon_paths:
+        gdf = gpd.read_parquet(path)
+        raster_polygon_polygons_list.append(gdf)
+
+    raster_polygons = pd.concat(raster_polygon_polygons_list, ignore_index=True)
+    _log.info(f"Found {len(raster_polygons)} raster polygons.")
+
+    _log.info("Merging raster waterbody polygons located at tile boundaries...")
+    raster_polygons_merged = merge_polygons_at_tile_boundaries(raster_polygons, tile_extents_gdf)
+    _log.info(
+        f"Raster polygons count after merging polygons at tile boundaries {len(raster_polygons_merged)}."
+    )
+
+    _log.info("Writing raster polygons merged at tile boundaries to disk..")
+    raster_polygons_output_fp = os.path.join(
+        output_directory, "raster_polygons_merged_at_tile_boundaries.parquet"
+    )
+
+    raster_polygons_merged.to_parquet(raster_polygons_output_fp)
+    _log.info(f"Polygons written to {raster_polygons_output_fp}")
