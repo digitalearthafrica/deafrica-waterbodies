@@ -24,7 +24,7 @@ from deafrica_tools.spatial import xr_vectorize
 from skimage import measure, morphology
 from skimage.segmentation import watershed
 
-from deafrica_waterbodies.filters import filter_by_intersection, filter_hydrosheds_land_mask
+from deafrica_waterbodies.filters import filter_by_intersection
 
 _log = logging.getLogger(__name__)
 
@@ -134,12 +134,12 @@ def merge_polygons_at_tile_boundaries(
 def load_wofs_frequency(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
+    filter_land_sea_mask: Callable,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
     min_valid_observations: int = 128,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
     resampling_method: str = "bilinear",
-    filter_land_sea_mask: Callable = filter_hydrosheds_land_mask,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Load the WOfS All-Time Summary frequency measurement for a tile and threshold the data
@@ -332,11 +332,11 @@ def confirm_extent_contains_detection(extent, detection):
 def process_raster_polygons(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
+    filter_land_sea_mask: Callable,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
     min_valid_observations: int = 128,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
-    filter_land_sea_mask: Callable = filter_hydrosheds_land_mask,
 ) -> gpd.GeoDataFrame:
     """
     Generate water body polygons by thresholding a WOfS All Time Summary tile.
