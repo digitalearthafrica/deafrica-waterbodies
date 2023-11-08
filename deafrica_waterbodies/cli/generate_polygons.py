@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 from importlib import import_module
 
@@ -7,7 +8,13 @@ import fsspec
 import geopandas as gpd
 import pandas as pd
 
+from deafrica_waterbodies.attributes import (
+    add_area_and_perimeter_attributes,
+    add_timeseries_attribute,
+    assign_unique_ids,
+)
 from deafrica_waterbodies.cli.logs import logging_setup
+from deafrica_waterbodies.filters import filter_by_area
 from deafrica_waterbodies.io import (
     check_dir_exists,
     check_file_exists,
@@ -71,14 +78,38 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
     help="Name of the plugin containing the filtering functions to use in the raster processing space. Plugin file must be in the deafrica_waterbodies/plugins/ directory.",
 )
 @click.option(
+    "--min-polygon-size",
+    default=4500,
+    show_default=True,
+    help="Minimum area in m2 of the waterbody polygons to be included.",
+)
+@click.option(
+    "--max-polygon-size",
+    default=math.inf,
+    show_default=True,
+    help="Maximum area in m2 of the waterbody polygons to be included.",
+)
+@click.option(
     "--output-directory",
     type=str,
     help="Directory to write the water body polygons to.",
 )
 @click.option(
-    "--overwrite/--no-overwrite",
-    default=False,
-    help="Rerun tiles that have already been processed.",
+    "--product-version",
+    type=str,
+    default="0.0.2",
+    show_default=True,
+    help="Product version for the DE Africa Waterbodies product.",
+)
+@click.option(
+    "--timeseries-bucket",
+    type=str,
+    help="The s3 bucket to containing the timeseries for the polygons.",
+)
+@click.option(
+    "--file-name-prefix",
+    type=str,
+    help="File name for the final output",
 )
 def generate_polygons(
     verbose,
@@ -91,6 +122,11 @@ def generate_polygons(
     plugin_name,
     output_directory,
     overwrite,
+    min_polygon_size,
+    max_polygon_size,
+    product_version,
+    timeseries_bucket,
+    file_name_prefix,
 ):
     # Set up logger.
     logging_setup(verbose=verbose)
@@ -226,14 +262,36 @@ def generate_polygons(
 
     _log.info("Merging raster waterbody polygons located at tile boundaries...")
     raster_polygons_merged = merge_polygons_at_tile_boundaries(raster_polygons, tile_extents_gdf)
+    # Drop the attributes column if it exists.
+    raster_polygons_merged.drop(columns=["attribute"], errors="ignore", inplace=True)
     _log.info(
         f"Raster polygons count after merging polygons at tile boundaries {len(raster_polygons_merged)}."
     )
 
     _log.info("Writing raster polygons merged at tile boundaries to disk..")
-    raster_polygons_output_fp = os.path.join(
+    raster_polygons_merged_fp = os.path.join(
         output_directory, "raster_polygons_merged_at_tile_boundaries.parquet"
     )
 
-    raster_polygons_merged.to_parquet(raster_polygons_output_fp)
-    _log.info(f"Polygons written to {raster_polygons_output_fp}")
+    raster_polygons_merged.to_parquet(raster_polygons_merged_fp)
+    _log.info(f"Polygons written to {raster_polygons_merged_fp}")
+
+    # Delete to conserve memeory
+    del raster_polygons
+    del tile_extents_gdf
+
+    # Filter the polygons by area.
+    area_filtered_raster_polygons = filter_by_area(
+        raster_polygons_merged, min_polygon_size=min_polygon_size, max_polygon_size=max_polygon_size
+    )
+    area_filtered_raster_polygons.to_parquet(
+        os.path.join(output_directory, "area_filtered_raster_polygons.parquet")
+    )
+
+    waterbodies_gdf = assign_unique_ids(polygons=area_filtered_raster_polygons)
+    waterbodies_gdf = add_area_and_perimeter_attributes(polygons=waterbodies_gdf)
+    waterbodies_gdf = add_timeseries_attribute(
+        polygons=waterbodies_gdf,
+        product_version=product_version,
+        timeseries_bucket=timeseries_bucket,
+    )
