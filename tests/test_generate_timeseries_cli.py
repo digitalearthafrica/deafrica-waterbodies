@@ -10,7 +10,7 @@ from deafrica_waterbodies.cli.generate_timeseries import generate_timeseries
 
 # Test directory.
 HERE = Path(__file__).parent.resolve()
-TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.parquet")
+TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.geojson")
 TEST_OUTPUT_DIRECTORY = HERE / "test_outputs"
 
 
@@ -19,7 +19,7 @@ def runner():
     return CliRunner(echo_stdin=True)
 
 
-def test_generate_timeseries(runner):
+def test_generate_timeseries(runner, capsys: pytest.CaptureFixture):
     waterbodies_vector_file = TEST_WATERBODY
     use_id = "UID"
     output_directory = TEST_OUTPUT_DIRECTORY
@@ -36,7 +36,8 @@ def test_generate_timeseries(runner):
         "--not-missing-only",
     ]
 
-    result = runner.invoke(generate_timeseries, args=args, catch_exceptions=True)
+    with capsys.disabled() as disabled:  # noqa F841
+        result = runner.invoke(generate_timeseries, args=args, catch_exceptions=True)
 
     assert result.exit_code == 0
 

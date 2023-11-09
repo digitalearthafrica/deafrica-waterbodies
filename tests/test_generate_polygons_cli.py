@@ -11,7 +11,7 @@ from deafrica_waterbodies.cli.generate_polygons import generate_polygons
 
 # Test directory.
 HERE = Path(__file__).parent.resolve()
-TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.parquet")
+TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.geojson")
 TEST_OUTPUT_DIRECTORY = HERE / "test_outputs"
 
 
@@ -20,7 +20,7 @@ def runner():
     return CliRunner(echo_stdin=True)
 
 
-def test_generate_polygons(runner):
+def test_generate_polygons(runner, capsys: pytest.CaptureFixture):
     aoi_vector_file = TEST_WATERBODY
     tile_size_factor = 1
     num_workers = 8
@@ -51,7 +51,8 @@ def test_generate_polygons(runner):
         f"--file-name-prefix={file_name_prefix}",
     ]
 
-    result = runner.invoke(generate_polygons, args=args, catch_exceptions=True)
+    with capsys.disabled() as disabled:  # noqa F841
+        result = runner.invoke(generate_polygons, args=args, catch_exceptions=True)
 
     assert result.exit_code == 0
 
