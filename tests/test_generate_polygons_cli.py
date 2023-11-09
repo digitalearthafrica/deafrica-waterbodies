@@ -12,7 +12,7 @@ from deafrica_waterbodies.cli.generate_polygons import generate_polygons
 # Test directory.
 HERE = Path(__file__).parent.resolve()
 TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.parquet")
-TEST_OUTPUT_DIRECTORY = HERE / "data"
+TEST_OUTPUT_DIRECTORY = HERE / "test_outputs"
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def test_generate_polygons(runner):
     output_directory = TEST_OUTPUT_DIRECTORY
     min_polygon_size = 4500
     max_polygon_size = math.inf
-    timeseries_directory = os.path.join(TEST_OUTPUT_DIRECTORY, "timeseries")
+    timeseries_directory = TEST_OUTPUT_DIRECTORY
     file_name_prefix = "waterbodies"
 
     args = [
@@ -55,9 +55,9 @@ def test_generate_polygons(runner):
 
     assert result.exit_code == 0
 
-    waterbodies = gpd.read_file(os.path.join(output_directory, "waterbodies.shp"))
+    test_waterbodies = gpd.read_file(os.path.join(output_directory, "waterbodies.shp"))
 
-    assert len(waterbodies) == 2
+    assert len(test_waterbodies) == 2
 
     # File clean up.
     fs = fsspec.filesystem("file")
