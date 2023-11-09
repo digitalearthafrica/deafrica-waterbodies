@@ -14,27 +14,27 @@
 
 
 ## Running tests in Docker
-- Once containers are up, you can run testing with the command `docker-compose exec conflux pytest`
+- Once containers are up, you can run testing with the command `docker compose exec waterbodies pytest`
 - If you want to run the tests interactively and have access to the interactive debugger,
-  Execute bash within the docker container conflux `docker-compose exec conflux bash` and then run `pytest` from the code directory:
+  Execute bash within the docker container conflux `docker compose exec waterbodies bash` and then run `pytest` from the code directory:
 
 ```bash
 root@fe004etc:/code# pytest tests
 ```
 
 ## Running tests in sandbox
-The tests assume that `dea-conflux` is installed. To install, follow the instructions in the [main README](../README.md). You can install `dea-conflux` locally for testing using `pip`:
+The tests assume that `deafrica-waterbodies` is installed. To install, follow the instructions in the [main README](../README.md). You can install `deafrica-conflux` locally for testing using `pip`:
 
 ```bash
-jovyan@jupyter:dea-conflux$ pip install -e .
+jovyan@jupyter-:~/dev/deafrica-waterbodies$ pip install -e .
 ```
 
 Remember the dot (.)!
 
-To run tests, use `pytest` from the dea-conflux repository root, in the terminal:
+To run tests, use `pytest` from the deafrica-waterbodies repository root, in the terminal:
 
 ```bash
-jovyan@jupyter:dea-conflux$ pytest tests
+jovyan@jupyter-:~/dev/deafrica-waterbodies$ pytest tests
 ```
 
 Tests are automatically triggered in GitHub for any pushes to any branch. This behaviour is controlled by `/.github/workflows/test.yml`.

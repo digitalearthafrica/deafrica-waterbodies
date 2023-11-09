@@ -49,9 +49,6 @@ run-tests:
 	docker compose exec -T waterbodies bash -c "coverage xml"
 	docker compose exec -T waterbodies bash -c "coverage html"
 
-test:
-	docker-compose exec waterbodies pytest tests
-
 down: ## Bring down the system
 	docker compose down
 
@@ -71,4 +68,5 @@ pip_compile:
 		requirements.in
 
 lint:
-	docker-compose exec waterbodies black --check dea_waterbodies
+	docker-compose exec waterbodies black --check deafrica_waterbodies
+	docker-compose exec waterbodies isort --check deafrica_waterbodies
