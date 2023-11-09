@@ -26,6 +26,6 @@ jobs:
     
     - name: Run deafrica-waterbodies test
       run: |
-          docker-compose exec -T waterbodies bash -c "pytest ."
+          make run-tests
       
     
