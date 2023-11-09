@@ -121,6 +121,9 @@ def generate_polygons(
     timeseries_directory,
     file_name_prefix,
 ):
+    """
+    Generate water body polygons from WOfS All Time Summary data
+    """
     # Set up logger.
     logging_setup(verbose=verbose)
     _log = logging.getLogger(__name__)
