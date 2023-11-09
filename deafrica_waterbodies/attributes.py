@@ -112,7 +112,7 @@ def get_timeseries_fp(
     csv_file = f"{uid}.csv"
 
     # Construct the file path
-    timeseries_fp = os.path.join(timeseries_directory, {subfolder}, {csv_file})
+    timeseries_fp = os.path.join(timeseries_directory, subfolder, csv_file)
 
     return timeseries_fp
 
