@@ -11,7 +11,6 @@ from deafrica_waterbodies.make_timeseries import generate_timeseries_from_wofs_l
 @click.option(
     "--waterbodies-vector-file",
     type=click.Path(),
-    default=None,
     help="REQUIRED. Path to the waterbody polygons vector file you "
     "want to run the time series generation for.",
 )

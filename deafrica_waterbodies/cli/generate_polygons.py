@@ -52,6 +52,11 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
     help="Number of worker processes to use when filtering WOfS All Time Summary product tiles",
 )
 @click.option(
+    "--overwrite/--no-overwrite",
+    default=False,
+    help="Rerun tiles that have already been processed.",
+)
+@click.option(
     "--detection-threshold",
     default=0.1,
     type=float,
