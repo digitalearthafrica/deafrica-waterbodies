@@ -10,7 +10,7 @@ from deafrica_waterbodies.cli.generate_timeseries import generate_timeseries
 
 # Test directory.
 HERE = Path(__file__).parent.resolve()
-TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.geojson")
+TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.parquet")
 TEST_OUTPUT_DIRECTORY = HERE / "test_outputs"
 
 
