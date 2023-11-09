@@ -81,6 +81,7 @@ def generate_timeseries(
     generate_timeseries_from_wofs_ls(
         waterbodies_vector_file=waterbodies_vector_file,
         output_directory=output_directory,
+        use_id=use_id,
         missing_only=missing_only,
         time_span=time_span,
         temporal_range=temporal_range,
