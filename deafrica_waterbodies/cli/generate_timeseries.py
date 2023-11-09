@@ -73,7 +73,10 @@ def generate_timeseries(
     logging_setup(verbose=verbose)
 
     # Parse string to list.
-    subset_polygon_ids = subset_polygon_ids.split(",")
+    if subset_polygon_ids is not None:
+        subset_polygon_ids = subset_polygon_ids.split(",")
+    else:
+        subset_polygon_ids = []
 
     generate_timeseries_from_wofs_ls(
         waterbodies_vector_file=waterbodies_vector_file,
