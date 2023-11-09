@@ -27,5 +27,9 @@ jobs:
     - name: Run deafrica-waterbodies test
       run: |
           make run-tests
-      
+          make down
     
+    - name: Clean deafrica-waterbodies image
+      run: |
+          (echo y) | docker container prune
+          (echo y) | docker image prune
