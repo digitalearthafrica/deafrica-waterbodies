@@ -25,9 +25,11 @@ classifiers=[
 ]
 requires-python = ">=3.6.0"
 dependencies = [
-    'boto3',
-    'boto3-stubs[sqs,s3]',
-    'botocore',
+    'aiobotocore[awscli,boto3]',
+    # 'boto3',
+    # 'botocore',
+    'types-aiobotocore[essential]',
+    # 'boto3-stubs[sqs,s3]',
     'click',
     'datacube',
     'deafrica-tools >= 2.1.2',
