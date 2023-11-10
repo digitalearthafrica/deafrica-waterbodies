@@ -5,9 +5,10 @@ import xarray as xr
 from datacube.testutils.io import rio_slurp_xarray
 
 
-def filter_land_sea_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
+def transform_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
     """
-    Function to filter the HydroSHEDs Land Mask into a boolean mask.
+    Function to transform the HydroSHEDs Land Mask into a boolean mask where
+    0/False are ocean pixels and 1/True are land pixels.
     """
     # Indicator values: 1 = land, 2 = ocean sink, 3 = inland sink, 255 is no data.
     boolean_mask = (hydrosheds_land_mask != 255) & (hydrosheds_land_mask != 2)
@@ -21,7 +22,8 @@ def load_land_sea_mask(
 ) -> xr.DataArray:
     """
     Load and reproject the HydroSHEDS Land Mask raster from the file path provided to
-    match the loaded datacube WOfS All Time Summary data.
+    match the loaded datacube WOfS All Time Summary data and transform the raster into
+    a boolean mask where 0/False are ocean pixels and 1/True are land pixels.
 
     Parameters
     ----------
@@ -42,6 +44,6 @@ def load_land_sea_mask(
     )
 
     # Filter the land sea mask.
-    boolean_land_sea_mask = filter_land_sea_mask(land_sea_mask_ds)
+    boolean_land_sea_mask = transform_hydrosheds_land_mask(land_sea_mask_ds)
 
     return boolean_land_sea_mask
