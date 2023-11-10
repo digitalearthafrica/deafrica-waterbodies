@@ -11,13 +11,6 @@ watercourses
 *.shp
 *.shx
 
-# Explicitly allow test data
-!tests/data/*.cpg
-!tests/data/*.dbf
-!tests/data/*.prj
-!tests/data/*.shp
-!tests/data/*.shx
-
 # graphs
 *.graphml
 *.gml
@@ -26,3 +19,6 @@ watercourses
 *.csv
 *.geojson
 *.json
+
+# Explicitly allow test data
+!tests/data/*.geojson
