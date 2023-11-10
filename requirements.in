@@ -2,8 +2,8 @@
 aiobotocore[awscli,boto3] >= 2.7.0
 #boto3
 #botocore
-types-aiobotocore[essential]
-#boto3-stubs[sqs,s3]
+#types-aiobotocore[essential]
+boto3-stubs[sqs,s3]
 click
 datacube
 deafrica-tools >= 2.1.2 --extra-index-url="https://packages.dea.ga.gov.au"

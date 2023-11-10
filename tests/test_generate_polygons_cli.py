@@ -11,7 +11,7 @@ from deafrica_waterbodies.cli.generate_polygons import generate_polygons
 
 # Test directory.
 HERE = Path(__file__).parent.resolve()
-TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.parquet")
+TEST_WATERBODY = os.path.join(HERE, "data", "sm9rtw98n.geojson")
 TEST_OUTPUT_DIRECTORY = HERE / "test_outputs"
 
 
@@ -27,7 +27,7 @@ def test_generate_polygons(runner, capsys: pytest.CaptureFixture):
     detection_threshold = 0.1
     extent_threshold = 0.05
     min_valid_observations = 60
-    raster_processing_plugin_name = "raster_processing_filtering"
+    # raster_processing_plugin_name = "raster_processing_filtering"
     output_directory = TEST_OUTPUT_DIRECTORY
     min_polygon_size = 4500
     max_polygon_size = math.inf
@@ -42,7 +42,7 @@ def test_generate_polygons(runner, capsys: pytest.CaptureFixture):
         f"--detection-threshold={detection_threshold}",
         f"--extent-threshold={extent_threshold}",
         f"--min-valid-observations={min_valid_observations}",
-        f"--raster-processing-plugin-name={raster_processing_plugin_name}",
+        # f"--raster-processing-plugin-name={raster_processing_plugin_name}",
         f"--min-polygon-size={min_polygon_size}",
         f"--max-polygon-size={max_polygon_size}",
         f"--output-directory={output_directory}",

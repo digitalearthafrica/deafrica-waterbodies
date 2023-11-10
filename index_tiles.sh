@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Add the wofs_ls_summary_alltime datasets.
-s3-to-dc "s3://deafrica-services/wofs_ls_summary_alltime/1-0-0/x194/y117/1984--P39Y/wofs_ls_summary_alltime_x194y117_1984--P39Y.stac-item.json" --stac --no-sign-request --skip-lineage 'wofs_ls_summary_alltime'
+s3-to-dc "s3://deafrica-services/wofs_ls_summary_alltime/1-0-0/x194/y117/*/*.json" --stac --no-sign-request --skip-lineage 'wofs_ls_summary_alltime'
 
 # Add the wofs_ls datasets covering the waterbody UID: sm9rtw98n
 s3-to-dc "s3://deafrica-services/wofs_ls/1-0-0/187/038/2023/01/*/*.json" --stac --no-sign-request --skip-lineage 'wofs_ls'
