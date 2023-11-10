@@ -32,13 +32,13 @@ def validate_plugin(plugin: ModuleType):
     """Check that a plugin declares required globals."""
     # Check globals.
     required_globals = [
-        "filter_land_sea_mask",
+        "load_land_sea_mask",
     ]
     for name in required_globals:
         if not hasattr(plugin, name):
             raise ValueError(f"Plugin missing {name}")
 
     # Check that functions are runnable.
-    required_functions = ["filter_land_sea_mask"]
+    required_functions = ["load_land_sea_mask"]
     for name in required_functions:
         assert hasattr(getattr(plugin, name), "__call__")
