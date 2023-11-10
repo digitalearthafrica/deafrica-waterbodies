@@ -13,15 +13,20 @@ def filter_land_sea_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
     """
     # Indicator values: 1 = land, 2 = ocean sink, 3 = inland sink, 255 is no data.
     boolean_mask = (hydrosheds_land_mask != 255) & (hydrosheds_land_mask != 2)
+
     return boolean_mask
 
 
-def load_land_sea_mask(land_sea_mask_fp, wofs_alltime_summary_ds, resampling_method):
+def load_land_sea_mask(
+    land_sea_mask_fp: str,
+    wofs_alltime_summary_ds: xr.DataArray,
+) -> xr.DataArray:
     land_sea_mask_ds = rio_slurp_xarray(
         fname=land_sea_mask_fp,
         gbox=wofs_alltime_summary_ds.geobox,
-        resampling=resampling_method,
+        resampling="bilinear",
     )
+
     # Filter the land sea mask.
     boolean_land_sea_mask = filter_land_sea_mask(land_sea_mask_ds)
 
