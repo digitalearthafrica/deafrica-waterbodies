@@ -9,7 +9,7 @@ Geoscience Australia - 2021
 
 import logging
 from pathlib import Path
-from typing import Callable
+from types import ModuleType
 
 import datacube
 import datacube.model
@@ -19,7 +19,6 @@ import pandas as pd
 import scipy.ndimage as ndi
 import shapely
 import xarray as xr
-from datacube.testutils.io import rio_slurp_xarray
 from deafrica_tools.spatial import xr_vectorize
 from skimage import measure, morphology
 from skimage.segmentation import watershed
@@ -134,12 +133,11 @@ def merge_polygons_at_tile_boundaries(
 def load_wofs_frequency(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
-    filter_land_sea_mask: Callable,
+    plugin: ModuleType,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
     min_valid_observations: int = 128,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
-    resampling_method: str = "bilinear",
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Load the WOfS All-Time Summary frequency measurement for a tile and threshold the data
@@ -152,6 +150,8 @@ def load_wofs_frequency(
         generate waterbody polygons for.
     grid_workflow: datacube.api.GridWorkflow,
         Grid Workflow used to generate the tiles and to be used to load the Tile object.
+    plugin: ModuleType
+        A validated plugin to load masks with.
     dask_chunks : dict, optional
         dask_chunks to use to load WOfS data, by default {"x": 3200, "y": 3200, "time": 1}
     min_valid_observations : int, optional
@@ -162,12 +162,6 @@ def load_wofs_frequency(
         the extent threshold listed first, by default [0.05, 0.1]
     land_sea_mask_fp: str | Path, optional
         File path to raster to use to mask ocean pixels in WOfS data, by default ""
-    resampling_method: str, optional
-        Resampling method to use when loading the land sea mask raster, by default "bilinear"
-    filter_land_sea_mask: Callable,
-        Function to apply to the land sea mask xr.DataArray to generate a boolean
-        mask where pixels with a value of True are land pixels and pixels with a
-        value of False are ocean pixels.
 
     Returns
     -------
@@ -176,6 +170,9 @@ def load_wofs_frequency(
         thresholds.
 
     """
+    if land_sea_mask_fp:
+        assert plugin is not None
+
     # Set up the detection and extent thresholds.
     extent_threshold = min_wet_thresholds[0]
     detection_threshold = min_wet_thresholds[-1]
@@ -192,14 +189,9 @@ def load_wofs_frequency(
 
         # Load the land sea mask.
         if land_sea_mask_fp:
-            land_sea_mask = rio_slurp_xarray(
-                fname=land_sea_mask_fp,
-                gbox=wofs_alltime_summary.geobox,
-                resampling=resampling_method,
+            boolean_land_sea_mask = plugin.load_land_sea_mask(
+                land_sea_mask_fp=land_sea_mask_fp, wofs_alltime_summary_ds=wofs_alltime_summary
             )
-
-            # Filter the land sea mask.
-            boolean_land_sea_mask = filter_land_sea_mask(land_sea_mask)
 
             # Mask the WOfS All-Time Summary dataset using the boolean land sea mask.
             wofs_alltime_summary = wofs_alltime_summary.where(boolean_land_sea_mask)
@@ -332,7 +324,7 @@ def confirm_extent_contains_detection(extent, detection):
 def process_raster_polygons(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
-    filter_land_sea_mask: Callable,
+    plugin: ModuleType,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
     min_valid_observations: int = 128,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
@@ -348,6 +340,8 @@ def process_raster_polygons(
         generate waterbody polygons for.
     grid_workflow: datacube.api.GridWorkflow,
         Grid Workflow used to generate the tiles and to be used to load the Tile object.
+    plugin: ModuleType
+        A validated plugin to load masks with.
     dask_chunks : dict, optional
         dask_chunks to use to load WOfS data, by default {"x": 3200, "y": 3200, "time": 1}
     min_valid_observations : int, optional
@@ -358,12 +352,6 @@ def process_raster_polygons(
         the extent threshold listed first, by default [0.05, 0.1]
     land_sea_mask_fp: str | Path, optional
         File path to raster to use to mask ocean pixels in WOfS data, by default ""
-    resampling_method: str, optional
-        Resampling method to use when loading the land sea mask raster, by default "bilinear"
-    filter_land_sea_mask: Callable, optional
-        Function to apply to the land sea mask xr.DataArray to generate a boolean
-        mask where pixels with a value of True are land pixels and pixels with a
-        value of False are ocean pixels, by default `filter_hydrosheds_land_mask`
     Returns
     -------
     gpd.GeoDataFrame
@@ -373,11 +361,11 @@ def process_raster_polygons(
     xr_detection, xr_extent = load_wofs_frequency(
         tile=tile,
         grid_workflow=grid_workflow,
+        plugin=plugin,
         dask_chunks=dask_chunks,
         min_valid_observations=min_valid_observations,
         min_wet_thresholds=min_wet_thresholds,
         land_sea_mask_fp=land_sea_mask_fp,
-        filter_land_sea_mask=filter_land_sea_mask,
     )
 
     # Get the crs.
