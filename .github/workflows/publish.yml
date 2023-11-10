@@ -1,0 +1,36 @@
+
+name: Publish deafrica-waterbodies to PyPI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'deafrica_waterbodies/**'
+
+  workflow_dispatch:
+
+jobs:
+  build-n-publish:
+    name: Build and publish deafrica-waterbodies to PyPI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./deafrica_waterbodies
+
+    steps:
+      - name: Checkout the digitalearthafrica/deafrica-waterbodiesrepository
+        uses: actions/checkout@v3
+      - name: Set up Python 3.10.6
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.6" # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified.
+      - name: Install pypa/build
+        run: python3 -m pip install build --user
+      - name: Build a binary wheel and a source tarball
+        run: python3 -m build --sdist --wheel --outdir dist/ .
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: deafrica_waterbodies/dist/

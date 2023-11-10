@@ -27,7 +27,7 @@ jobs:
     - name: Run deafrica-waterbodies test
       run: |
           make run-tests
-          make down
+          make clean
     
     - name: Clean deafrica-waterbodies image
       run: |
