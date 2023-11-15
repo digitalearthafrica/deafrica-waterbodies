@@ -5,11 +5,14 @@ import os
 
 import geopandas as gpd
 import numpy as np
+import skimage.morphology
 import xarray as xr
 from deafrica_tools.spatial import xr_rasterize
 
 # File extensions to recognise as Parquet files.
 PARQUET_EXTENSIONS = {".pq", ".parquet"}
+
+buffer_pixels = 2
 
 
 def transform_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
@@ -21,6 +24,30 @@ def transform_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.Dat
     boolean_mask = (hydrosheds_land_mask != 255) & (hydrosheds_land_mask != 2)
 
     return boolean_mask
+
+
+def erode_land_sea_mask(boolean_land_sea_mask: xr.DataArray, buffer_pixels: int) -> xr.DataArray:
+    """
+    Shrink the land in the land/sea mask.
+
+    Parameters
+    ----------
+    boolean_land_sea_mask : xr.DataArray
+        Boolean mask where 0/False are ocean pixels and 1/True are land pixels.
+    buffer_pixels : int
+        Number of pixels to erode the land by.
+
+    Returns
+    -------
+    xr.DataArray
+        Eroded land sea mask where 0/False are ocean pixels and 1/True are land pixels.
+    """
+    eroded_boolean_land_sea_mask = xr.apply_ufunc(
+        skimage.morphology.binary_erosion,
+        boolean_land_sea_mask,
+        skimage.morphology.disk(buffer_pixels),
+    )
+    return eroded_boolean_land_sea_mask
 
 
 def load_land_sea_mask(
@@ -59,4 +86,7 @@ def load_land_sea_mask(
     land_sea_mask_ds = xr_rasterize(land_sea_mask_gdf, wofs_alltime_summary_ds)
     boolean_land_sea_mask = np.logical_not(land_sea_mask_ds)
 
-    return boolean_land_sea_mask
+    # Erode the land in the land sea mask
+    eroded_boolean_land_sea_mask = erode_land_sea_mask(boolean_land_sea_mask, buffer_pixels)
+
+    return eroded_boolean_land_sea_mask
