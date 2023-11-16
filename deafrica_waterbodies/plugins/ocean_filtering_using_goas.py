@@ -12,7 +12,7 @@ from deafrica_tools.spatial import xr_rasterize
 # File extensions to recognise as Parquet files.
 PARQUET_EXTENSIONS = {".pq", ".parquet"}
 
-buffer_pixels = 2
+buffer_pixels = 5
 
 
 def transform_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:

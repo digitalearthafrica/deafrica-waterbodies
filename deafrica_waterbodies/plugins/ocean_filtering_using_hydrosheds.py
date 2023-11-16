@@ -5,7 +5,7 @@ import skimage.morphology
 import xarray as xr
 from datacube.testutils.io import rio_slurp_xarray
 
-buffer_pixels = 2
+buffer_pixels = 5
 
 
 def transform_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
