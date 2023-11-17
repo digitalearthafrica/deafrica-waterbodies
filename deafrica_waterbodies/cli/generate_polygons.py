@@ -52,9 +52,11 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
     help="Number of worker processes to use when filtering WOfS All Time Summary product tiles",
 )
 @click.option(
-    "--overwrite/--no-overwrite",
-    default=False,
-    help="Rerun tiles that have already been processed.",
+    "--min-valid-observations",
+    default=60,
+    type=int,
+    help="Minimum number of observations for a pixel to be considered valid.",
+    show_default=True,
 )
 @click.option(
     "--detection-threshold",
@@ -71,17 +73,21 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
     show_default=True,
 )
 @click.option(
-    "--min-valid-observations",
-    default=60,
-    type=int,
-    help="Minimum number of observations for a pixel to be considered valid.",
-    show_default=True,
+    "--land-sea-mask-fp",
+    default="",
+    help="File path to vector/raster dataset to use to filter out ocean polygons.",
 )
 @click.option(
     "--raster-processing-plugin-name",
     default=None,
     type=str,
-    help="Name of the plugin containing the filtering functions to use in the raster processing space. Plugin file must be in the deafrica_waterbodies/plugins/ directory.",
+    help="Name of the plugin containing the filtering functions to use in the raster processing space."
+    "Plugin file must be in the deafrica_waterbodies/plugins/ directory.",
+)
+@click.option(
+    "--overwrite/--no-overwrite",
+    default=False,
+    help="Rerun tiles that have already been processed.",
 )
 @click.option(
     "--min-polygon-size",
@@ -107,6 +113,7 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
 )
 @click.option(
     "--file-name-prefix",
+    default="waterbodies",
     type=str,
     help="File name for the final output",
 )
@@ -115,14 +122,15 @@ def generate_polygons(
     aoi_vector_file,
     tile_size_factor,
     num_workers,
+    min_valid_observations,
     detection_threshold,
     extent_threshold,
-    min_valid_observations,
+    land_sea_mask_fp,
     raster_processing_plugin_name,
-    output_directory,
     overwrite,
     min_polygon_size,
     max_polygon_size,
+    output_directory,
     timeseries_directory,
     file_name_prefix,
 ):
@@ -134,7 +142,6 @@ def generate_polygons(
     _log = logging.getLogger(__name__)
 
     # Parameters to use when loading datasets.
-    # Chunk size was chosen to match Landsat WOfS scene size.
     dask_chunks = {"x": 3200, "y": 3200, "time": 1}
 
     # Support pathlib Paths.
@@ -148,6 +155,14 @@ def generate_polygons(
         fs = fsspec.filesystem("s3")
     else:
         fs = fsspec.filesystem("file")
+
+    # Directory to write generated waterbody polygons to.
+    polygons_from_thresholds_dir = os.path.join(output_directory, "polygons_from_thresholds")
+
+    # Check if the directory exists. If it does not, create it.
+    if not check_dir_exists(polygons_from_thresholds_dir):
+        fs.mkdirs(polygons_from_thresholds_dir, exist_ok=True)
+        _log.info(f"Created directory {polygons_from_thresholds_dir}")
 
     # Load the area of interest as a GeoDataFrame.
     if aoi_vector_file is not None:
@@ -164,14 +179,6 @@ def generate_polygons(
         aoi_gdf=aoi_gdf, tile_size_factor=tile_size_factor, num_workers=num_workers
     )
 
-    # Directory to write generated waterbody polygons to.
-    polygons_from_thresholds_dir = os.path.join(output_directory, "polygons_from_thresholds")
-
-    # Check if the directory exists. If it does not, create it.
-    if not check_dir_exists(polygons_from_thresholds_dir):
-        fs.mkdirs(polygons_from_thresholds_dir, exist_ok=True)
-        _log.info(f"Created directory {polygons_from_thresholds_dir}")
-
     # Set the wetness thresholds.
     min_wet_thresholds = set_wetness_thresholds(
         detection_threshold=detection_threshold, extent_threshold=extent_threshold
@@ -185,12 +192,8 @@ def generate_polygons(
         plugin = run_plugin(plugin_file)
         _log.info(f"Using plugin {plugin_file}")
         validate_plugin(plugin)
-
-        land_sea_mask_fp = plugin.land_sea_mask_fp
-        filter_land_sea_mask = plugin.filter_land_sea_mask
     else:
-        land_sea_mask_fp = ""
-        filter_land_sea_mask = None
+        plugin = None
 
     # Generate the first set of polygons for each of the tiles.
     for tile in tiles.items():
@@ -213,11 +216,11 @@ def generate_polygons(
                 raster_polygons = process_raster_polygons(
                     tile=tile,
                     grid_workflow=grid_workflow,
+                    plugin=plugin,
                     dask_chunks=dask_chunks,
                     min_valid_observations=min_valid_observations,
                     min_wet_thresholds=min_wet_thresholds,
                     land_sea_mask_fp=land_sea_mask_fp,
-                    filter_land_sea_mask=filter_land_sea_mask,
                 )
                 if raster_polygons.empty:
                     _log.info(f"Tile {str(tile_id)} contains no water body polygons.")
@@ -274,7 +277,6 @@ def generate_polygons(
     raster_polygons_merged_fp = os.path.join(
         output_directory, "raster_polygons_merged_at_tile_boundaries.parquet"
     )
-
     raster_polygons_merged.to_parquet(raster_polygons_merged_fp)
     _log.info(f"Polygons written to {raster_polygons_merged_fp}")
 
@@ -307,3 +309,5 @@ def generate_polygons(
         output_directory=output_directory,
         file_name_prefix=file_name_prefix,
     )
+
+    # waterbodies_gdf_4326.to_parquet(os.path.join(output_directory, f"{file_name_prefix}.parquet"))
