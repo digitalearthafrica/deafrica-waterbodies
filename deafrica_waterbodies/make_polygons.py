@@ -326,7 +326,7 @@ def process_raster_polygons(
     grid_workflow: datacube.api.GridWorkflow,
     plugin: ModuleType,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
-    min_valid_observations: int = 128,
+    min_valid_observations: int = 60,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
 ) -> gpd.GeoDataFrame:
