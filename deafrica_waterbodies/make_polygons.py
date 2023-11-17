@@ -310,6 +310,7 @@ def confirm_extent_contains_detection(extent, detection):
     detection : _type_
         _description_
     """
+
     def sum_intensity(regionmask, intensity_image):
         return np.sum(intensity_image[regionmask])
 

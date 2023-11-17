@@ -5,7 +5,7 @@ import skimage.morphology
 import xarray as xr
 from datacube.testutils.io import rio_slurp_xarray
 
-buffer_pixels = 5
+buffer_pixels = 500 / 30
 
 
 def transform_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.DataArray:
@@ -19,7 +19,7 @@ def transform_hydrosheds_land_mask(hydrosheds_land_mask: xr.DataArray) -> xr.Dat
     return boolean_mask
 
 
-def erode_land_sea_mask(boolean_land_sea_mask: xr.DataArray, buffer_pixels: int) -> xr.DataArray:
+def erode_land_sea_mask(boolean_land_sea_mask: xr.DataArray, buffer_pixels: float) -> xr.DataArray:
     """
     Shrink the land in the land/sea mask.
 
@@ -27,7 +27,7 @@ def erode_land_sea_mask(boolean_land_sea_mask: xr.DataArray, buffer_pixels: int)
     ----------
     boolean_land_sea_mask : xr.DataArray
         Boolean mask where 0/False are ocean pixels and 1/True are land pixels.
-    buffer_pixels : int
+    buffer_pixels : float
         Number of pixels to erode the land by.
 
     Returns
