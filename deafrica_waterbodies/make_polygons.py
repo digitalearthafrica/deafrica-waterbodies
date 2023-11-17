@@ -135,7 +135,7 @@ def load_wofs_frequency(
     grid_workflow: datacube.api.GridWorkflow,
     plugin: ModuleType,
     dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},
-    min_valid_observations: int = 128,
+    min_valid_observations: int = 60,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
 ) -> tuple[xr.DataArray, xr.DataArray]:
@@ -151,12 +151,12 @@ def load_wofs_frequency(
     grid_workflow: datacube.api.GridWorkflow,
         Grid Workflow used to generate the tiles and to be used to load the Tile object.
     plugin: ModuleType
-        A validated plugin to load masks with.
+        A validated plugin to load filtering masks with.
     dask_chunks : dict, optional
         dask_chunks to use to load WOfS data, by default {"x": 3200, "y": 3200, "time": 1}
     min_valid_observations : int, optional
         Threshold to use to mask out pixels based on the number of valid WOfS
-        observations for each pixel, by default 128
+        observations for each pixel, by default 60
     min_wet_thresholds: list[int | float], optional
         A list containing the extent threshold and the detection threshold, with
         the extent threshold listed first, by default [0.05, 0.1]
@@ -301,6 +301,15 @@ def run_watershed(waterbodies_for_segementation: np.ndarray, segmentation_marker
 
 
 def confirm_extent_contains_detection(extent, detection):
+    """_summary_
+
+    Parameters
+    ----------
+    extent : _type_
+        _description_
+    detection : _type_
+        _description_
+    """
     def sum_intensity(regionmask, intensity_image):
         return np.sum(intensity_image[regionmask])
 
@@ -346,7 +355,7 @@ def process_raster_polygons(
         dask_chunks to use to load WOfS data, by default {"x": 3200, "y": 3200, "time": 1}
     min_valid_observations : int, optional
         Threshold to use to mask out pixels based on the number of valid WOfS
-        observations for each pixel, by default 128
+        observations for each pixel, by default 60
     min_wet_thresholds: list[int | float], optional
         A list containing the extent threshold and the detection threshold, with
         the extent threshold listed first, by default [0.05, 0.1]
