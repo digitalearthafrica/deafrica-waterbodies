@@ -134,6 +134,7 @@ def generate_polygons(
     _log = logging.getLogger(__name__)
 
     # Parameters to use when loading datasets.
+    # Chunk size was chosen to match Landsat WOfS scene size.
     dask_chunks = {"x": 3200, "y": 3200, "time": 1}
 
     # Support pathlib Paths.
