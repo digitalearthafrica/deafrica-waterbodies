@@ -38,9 +38,9 @@ def set_wetness_thresholds(
     Parameters
     ----------
     detection_threshold : int | float
-        Threshold used to set the location of the water body polygons.
+        Threshold used to set the location of the waterbody polygons.
     extent_threshold : int | float
-        Threshold used to set the shape/extent of the water body polygons.
+        Threshold used to set the shape/extent of the waterbody polygons.
 
     Returns
     -------
@@ -68,8 +68,8 @@ def set_wetness_thresholds(
     else:
         _log.info(
             f"""We will be running a hybrid wetness threshold.
-        You have set {detection_threshold} as the location threshold, which will define the location of the water body polygons.
-        You have set {extent_threshold} as the extent threshold, which will define the extent/shape of the water body polygons."""
+        You have set {detection_threshold} as the location threshold, which will define the location of the waterbody polygons.
+        You have set {extent_threshold} as the extent threshold, which will define the extent/shape of the waterbody polygons."""
         )
         return [extent_threshold, detection_threshold]
 
@@ -84,7 +84,7 @@ def merge_polygons_at_tile_boundaries(
     ----------
     waterbody_polygons : gpd.GeoDataFrame
         The waterbody polygons.
-    tile_exents_gdf: gpd.GeoDataFrame
+    tile_extents_gdf: gpd.GeoDataFrame
         The extents of the tiles used to generate the waterbody polygons.
 
     Returns
@@ -227,14 +227,14 @@ def load_wofs_frequency(
 
 def remove_small_waterbodies(waterbody_raster: np.ndarray, min_size: int = 6) -> np.ndarray:
     """
-    Remove water bodies from the raster that are smaller than the specified size.
+    Remove water bodies from the raster that are smaller than the specified number of pixels.
 
     Parameters
     ----------
     waterbody_raster : np.ndarray
         Raster image to filter.
     min_size : int, optional
-        The smallest allowable water body size, by default 6
+        The smallest allowable waterbody size i.e. minimum number of pixels a waterbody must have, by default 6
 
     Returns
     -------
@@ -250,13 +250,23 @@ def remove_small_waterbodies(waterbody_raster: np.ndarray, min_size: int = 6) ->
     return waterbodies_small_removed
 
 
-# Need a step to only segment the largest objects
-# only segment bigger than minsize
 def select_waterbodies_for_segmentation(
     waterbodies_labelled: np.ndarray, min_size: int = 1000
 ) -> np.ndarray:
     """
-    Function to select the waterbodies to be segmented.
+    Select waterbodies larger than the specified number of pixels for segmentation.
+
+    Parameters
+    ----------
+    waterbodies_labelled : np.ndarray
+        Raster image to filter.
+    min_size : int, optional
+        Minimum number of pixels to classify a waterbody as large, by default 1000
+
+    Returns
+    -------
+    np.ndarray
+        Raster containing the large waterbodies to be segmented.
     """
 
     props = measure.regionprops(waterbodies_labelled)
@@ -278,7 +288,21 @@ def generate_segmentation_markers(
     marker_source: np.ndarray, erosion_radius: int = 1, min_size: int = 100
 ) -> np.ndarray:
     """
-    Function to create watershed segementation markers.
+    Create watershed segmentation markers.
+
+    Parameters
+    ----------
+    marker_source : np.ndarray
+        Raster image to generate watershed segmentation markers from.
+    erosion_radius : int, optional
+        Radius to use to generate footprint for erosion., by default 1
+    min_size : int, optional
+        The smallest allowable object size, by default 100
+
+    Returns
+    -------
+    np.ndarray
+        Watershed segmentation markers.
     """
     markers = morphology.erosion(marker_source, footprint=morphology.disk(radius=erosion_radius))
     markers_relabelled = morphology.label(markers, background=0)
@@ -290,25 +314,46 @@ def generate_segmentation_markers(
     return markers_acceptable_size
 
 
-def run_watershed(waterbodies_for_segementation: np.ndarray, segmentation_markers):
+def run_watershed(
+    waterbodies_for_segmentation: np.ndarray, segmentation_markers: np.ndarray
+) -> np.ndarray:
     """
-    Run segmentation
+    Segment large waterbodies.
+
+    Parameters
+    ----------
+    waterbodies_for_segmentation : np.ndarray
+        Raster image containing the large waterbodies to be segmented.
+    segmentation_markers : np.ndarray
+        Raster image containing the watershed segmentation markers.
+
+    Returns
+    -------
+    np.ndarray
+        Raster image with the large waterbodies segmented.
     """
-    distance = ndi.distance_transform_edt(waterbodies_for_segementation)
-    segmented = watershed(-distance, segmentation_markers, mask=waterbodies_for_segementation)
+    distance = ndi.distance_transform_edt(waterbodies_for_segmentation)
+    segmented = watershed(-distance, segmentation_markers, mask=waterbodies_for_segmentation)
 
     return segmented
 
 
-def confirm_extent_contains_detection(extent, detection):
-    """_summary_
+def confirm_extent_contains_detection(extent: np.ndarray, detection: np.ndarray) -> np.ndarray:
+    """
+    Filter the waterbodies in the extent raster to keep only waterbodies that contain a waterbody pixel from the
+    detection raster.
 
     Parameters
     ----------
-    extent : _type_
-        _description_
-    detection : _type_
-        _description_
+    extent : np.ndarray
+        Raster of the extent of the waterbodies.
+    detection : np.ndarray
+        Raster of the location of the waterbodies.
+
+    Returns
+    -------
+    np.ndarray
+        Filtered waterbodies in the extent raster.
     """
 
     def sum_intensity(regionmask, intensity_image):
@@ -341,7 +386,7 @@ def process_raster_polygons(
     land_sea_mask_fp: str | Path = "",
 ) -> gpd.GeoDataFrame:
     """
-    Generate water body polygons by thresholding a WOfS All Time Summary tile.
+    Generate waterbody polygons by thresholding a WOfS All Time Summary tile.
 
     Parameters
     ----------
@@ -365,7 +410,7 @@ def process_raster_polygons(
     Returns
     -------
     gpd.GeoDataFrame
-        Water body polygons.
+        waterbody polygons.
     """
     # Load and threshold the WOfS All Time Summary tile.
     xr_detection, xr_extent = load_wofs_frequency(
@@ -396,7 +441,7 @@ def process_raster_polygons(
     np_extent_segment = select_waterbodies_for_segmentation(np_extent_small_removed, min_size=1000)
     np_extent_nosegment = np.where(np_extent_segment > 0, 0, np_extent_small_removed)
 
-    # Create watershed segementation markers by taking the detection threshold pixels and eroding them by 1
+    # Create watershed segmentation markers by taking the detection threshold pixels and eroding them by 1
     # Includes removal of any markers smaller than 100 pixels
     segmentation_markers = generate_segmentation_markers(
         np_detection, erosion_radius=1, min_size=100

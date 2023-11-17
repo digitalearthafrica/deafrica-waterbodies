@@ -303,11 +303,11 @@ def generate_polygons(
     # Reproject to EPSG:4326
     waterbodies_gdf_4326 = waterbodies_gdf.to_crs("EPSG:4326")
 
-    # Write to disk.
+    # Write shapefile to disk.
     write_waterbodies_to_file(
         waterbodies_gdf=waterbodies_gdf_4326,
         output_directory=output_directory,
         file_name_prefix=file_name_prefix,
     )
-
-    # waterbodies_gdf_4326.to_parquet(os.path.join(output_directory, f"{file_name_prefix}.parquet"))
+    # Write parquet file to disk.
+    waterbodies_gdf_4326.to_parquet(os.path.join(output_directory, f"{file_name_prefix}.parquet"))
