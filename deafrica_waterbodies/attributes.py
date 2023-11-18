@@ -10,7 +10,7 @@ from deafrica_waterbodies.io import check_if_s3_uri
 _log = logging.getLogger(__name__)
 
 
-def assign_unique_ids(polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def assign_unique_ids(polygons: gpd.GeoDataFrame, precision: int = 10) -> gpd.GeoDataFrame:
     """
     Function to assign a unique ID to each waterbody polygon.
 
@@ -18,7 +18,9 @@ def assign_unique_ids(polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     ----------
     polygons : gpd.GeoDataFrame
         GeoDataFrame containing the waterbody polygons.
-
+    precision : int
+        Precision to use when encoding a polygon's centroid using geohash to
+        generate the polygon's unique identifier.
     Returns
     -------
     gpd.GeoDataFrame
@@ -35,7 +37,7 @@ def assign_unique_ids(polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     # Generate a unique id for each polygon.
     polygons_with_unique_ids = polygons.to_crs(epsg=4326)
     polygons_with_unique_ids["UID"] = polygons_with_unique_ids.apply(
-        lambda x: gh.encode(x.geometry.centroid.y, x.geometry.centroid.x, precision=9), axis=1
+        lambda x: gh.encode(x.geometry.centroid.y, x.geometry.centroid.x, precision=precision), axis=1
     )
 
     # Check that our unique ID is in fact unique
