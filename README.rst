@@ -29,7 +29,7 @@ Digital Earth Africa Waterbodies
 
 Up to date information about the extent and location of surface water across Africa provides stakeholders with a common understanding of this valuable and increasingly scarce resource. Water detection algorithms are now being routinely applied to continental and global archives of satellite imagery. However, water resource management decisions typically take place at the waterbody rather than pixel scale. 
 
-This repository presents a workflow for generating polygons of persistent waterbodies from Landsat observations, enabling improved monitoring and management of water assets across Africa. We use `Digital Earth Africa’s (DE Africa) Water Observations from Space (WOfS) water classifier <https://docs.digitalearthafrica.org/en/latest/data_specs/Landsat_WOfS_specs.html>`_, which provides a water classified output for every available Landsat scene, to determine the spatial locations and extents of waterbodies across Africa. DE Africa Waterbodies uses Digital Earth Africa’s archive of over 30 years of Landsat satellite imagery to identify where almost 700,000 waterbodies are in the African landscape. 
+This repository presents a workflow for generating polygons of persistent waterbodies from Landsat observations, enabling improved monitoring and management of water assets across Africa. We use `Digital Earth Africa’s (DE Africa) Water Observations from Space (WOfS) water classifier <https://docs.digitalearthafrica.org/en/latest/data_specs/Landsat_WOfS_specs.html>`_, which provides a water classified output for every available Landsat scene, to determine the spatial locations and extents of waterbodies across Africa. DE Africa Waterbodies uses Digital Earth Africa’s archive of over 30 years of Landsat satellite imagery to identify where over 700,000 waterbodies are in the African landscape. 
 
 .. image:: figures/WorkflowDiagram.JPG
   :width: 900
@@ -43,7 +43,7 @@ Each polygon was then used to generate a time series of WOfS, providing a histor
   :width: 900
   :alt: Digital Earth Australia Waterbodies
 
-*Digital Earth Africa Waterbodies. Waterbody polygons mapped by this product are shown in blue. There are almost 700,000 across Africa.*
+*Digital Earth Africa Waterbodies. Waterbody polygons mapped by this product are shown in blue. There are over 700,000 across Africa.*
 
 DE Africa Waterbodies supports users to understand and manage water across Africa. DE Africa Waterbodies provides new insights into local through to continental-scale surface water spatio-temporal dynamics by enabling the monitoring of important landscape features such as lakes and dams, improving our ability to use earth observation data to make meaningful decisions. It can be used to gain insights into the severity and spatial distribution of drought, or identify potential water sources.
 For more information about the DE Africa Waterbodies product, including instructions for accessing the product, frequently asked questions and data download links, see the `Digital Earth Africa Data Catalogue <https://docs.digitalearthafrica.org/en/latest/data_specs/Waterbodies_specs.html>`_.
