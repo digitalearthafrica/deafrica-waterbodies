@@ -11,34 +11,6 @@ from deafrica_waterbodies.io import check_dir_exists, check_if_s3_uri
 _log = logging.getLogger(__name__)
 
 
-def filter_large_polygons(
-    polygons_gdf: gpd.GeoDataFrame, length_threshold_km: float = 150
-) -> gpd.GeoDataFrame:
-    """
-    Filter out polygons whose length is greater than the length threshold.
-
-    Parameters
-    ----------
-    polygons_gdf : gpd.GeoDataFrame
-        Polygons to filter.
-    length_threshold_km : float, optional
-        Length threshold in kilometers by which to filter out large polygons, by default 150
-
-    Returns
-    -------
-    gpd.GeoDataFrame
-        Polygons with large polygons filtered out.
-    """
-    length_threshold_m = length_threshold_km * 1000
-
-    filtered_polygons_gdf = polygons_gdf[polygons_gdf["length_m"] <= length_threshold_m]
-
-    _log.info(
-        f"Filtered out {len(polygons_gdf) - len(filtered_polygons_gdf)} polygons out of {len(polygons_gdf)} polygons."
-    )
-    return filtered_polygons_gdf
-
-
 def get_intersecting_polygons_ids(
     region: gpd.GeoDataFrame, polygons_gdf: gpd.GeoDataFrame
 ) -> gpd.GeoDataFrame:
@@ -104,7 +76,6 @@ def split_polygons_by_region(
     polygons_gdf: gpd.GeoDataFrame,
     output_directory: str,
     product: str = "wofs_ls",
-    length_threshold_km: float = 150,
 ) -> dict:
     """
     Split a set of polygons by the regions in a DE Africa's product regions
@@ -120,8 +91,6 @@ def split_polygons_by_region(
         from the split by regions.
     product : str, optional
         The DE Africa product to use to get the regions and region codes, by default "wofs_ls"
-    length_threshold_km : float, optional
-                Length threshold in kilometers by which to filter out large polygons, by default 150
 
     Returns
     -------
@@ -129,11 +98,6 @@ def split_polygons_by_region(
         A dictionary of the region codes and the file path to the polygons that
         intersect with the region.
     """
-    # Filter out large polygons from the polygons.
-    polygons_gdf = filter_large_polygons(
-        polygons_gdf=polygons_gdf, length_threshold_km=length_threshold_km
-    )
-
     # Load the regions file.
     product_regions_fp = f"https://explorer.digitalearth.africa/api/regions/{product}"
     product_regions = gpd.read_file(product_regions_fp).to_crs(polygons_gdf.crs)
