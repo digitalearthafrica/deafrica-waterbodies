@@ -6,6 +6,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from deafrica_waterbodies.id_field import guess_id_field
 from deafrica_waterbodies.io import check_dir_exists, check_if_s3_uri
 
 _log = logging.getLogger(__name__)
@@ -84,8 +85,7 @@ def split_polygons_by_region(
     Parameters
     ----------
     polygons_gdf : gpd.GeoDataFrame
-        The set of polygons to split by region, with the polygon IDs column set
-        as the index.
+        The set of polygons to split by region.
     output_directory : str
         The directory to write the parquet files for the GeoDataFrames
         from the split by regions.
@@ -98,6 +98,12 @@ def split_polygons_by_region(
         A dictionary of the region codes and the file path to the polygons that
         intersect with the region.
     """
+    id_field = guess_id_field(polygons_gdf)
+    _log.info(f"Guessed ID field: {id_field}")
+
+    # Set the ID field as the index.
+    polygons_gdf.set_index(id_field, inplace=True)
+
     # Load the regions file.
     product_regions_fp = f"https://explorer.digitalearth.africa/api/regions/{product}"
     product_regions = gpd.read_file(product_regions_fp).to_crs(polygons_gdf.crs)
