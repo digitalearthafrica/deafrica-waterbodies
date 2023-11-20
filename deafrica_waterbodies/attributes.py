@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 import geohash as gh
 import geopandas as gpd
+from shapely import Point, Polygon
 
 from deafrica_waterbodies.io import check_if_s3_uri
 
@@ -37,7 +38,8 @@ def assign_unique_ids(polygons: gpd.GeoDataFrame, precision: int = 10) -> gpd.Ge
     # Generate a unique id for each polygon.
     polygons_with_unique_ids = polygons.to_crs(epsg=4326)
     polygons_with_unique_ids["UID"] = polygons_with_unique_ids.apply(
-        lambda x: gh.encode(x.geometry.centroid.y, x.geometry.centroid.x, precision=precision), axis=1
+        lambda x: gh.encode(x.geometry.centroid.y, x.geometry.centroid.x, precision=precision),
+        axis=1,
     )
 
     # Check that our unique ID is in fact unique
@@ -171,9 +173,44 @@ def add_timeseries_attribute(
     return polygons
 
 
-def add_area_and_perimeter_attributes(polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def get_polygon_length(poly: Polygon) -> float:
     """
-    Function to add the area and perimeter for each waterbody polygon.
+    Calculate the length of a polygon.
+
+    Parameters
+    ----------
+    poly : Polygon
+        Polygon to get length for.
+
+    Returns
+    -------
+    float
+        Length of polygon i.e. longest edge of the mminimum bounding of the polygon.
+    """
+    # Calculate the minimum bounding box (oriented rectangle) of the polygon
+    min_bbox = poly.minimum_rotated_rectangle
+
+    # Get the coordinates of polygon vertices.
+    x, y = min_bbox.exterior.coords.xy
+
+    # Get the length of bounding box edges
+    edge_length = (
+        Point(x[0], y[0]).distance(Point(x[1], y[1])),
+        Point(x[1], y[1]).distance(Point(x[2], y[2])),
+    )
+
+    # Get the length of polygon as the longest edge of the bounding box.
+    length = max(edge_length)
+
+    # Get width of the polygon as the shortest edge of the bounding box.
+    # width = min(edge_length)
+
+    return length
+
+
+def add_polygon_properties(polygons: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Function to add the area, perimeter and length for each waterbody polygon.
 
     Parameters
     ----------
@@ -184,15 +221,20 @@ def add_area_and_perimeter_attributes(polygons: gpd.GeoDataFrame) -> gpd.GeoData
     -------
     gpd.GeoDataFrame
         GeoDataFrame with the crs "EPSG:6933" containing the waterbody polygons
-        with additional columns "area_m2" and "perim_m".
+        with additional columns "area_m2", "perim_m" and "length_m".
         The "area_m2" column contains the area in meters squared of each
         waterbody polygon calculated in the crs "EPS:6933".
         The "perim_m" column contains the perimeter in meters of each
+        waterbody polygon calculated in the crs "EPS:6933".
+        The "length_m" column contains the major axis length in meters of each
         waterbody polygon calculated in the crs "EPS:6933".
     """
 
     # Reproject into a projected crs
     polygons_6933 = polygons.to_crs("EPSG:6933")
+
+    # Get the major axis length of each polygon.
+    polygons_6933["length_m"] = polygons_6933["geometry"].apply(get_polygon_length)
 
     # Perimeter
     polygons_6933["perim_m"] = polygons_6933.geometry.length
