@@ -134,7 +134,11 @@ def load_wofs_frequency(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
     plugin: ModuleType,
-    dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},  # based on Landsat WOfS scene size
+    dask_chunks: dict[str, int] = {
+        "x": 3200,
+        "y": 3200,
+        "time": 1,
+    },  # based on Landsat WOfS scene size
     min_valid_observations: int = 60,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
@@ -380,7 +384,11 @@ def process_raster_polygons(
     tile: tuple[tuple[int, int], datacube.api.grid_workflow.Tile],
     grid_workflow: datacube.api.GridWorkflow,
     plugin: ModuleType,
-    dask_chunks: dict[str, int] = {"x": 3200, "y": 3200, "time": 1},  # based on Landsat WOfS scene size
+    dask_chunks: dict[str, int] = {
+        "x": 3200,
+        "y": 3200,
+        "time": 1,
+    },  # based on Landsat WOfS scene size
     min_valid_observations: int = 60,
     min_wet_thresholds: list[int | float] = [0.05, 0.1],
     land_sea_mask_fp: str | Path = "",
