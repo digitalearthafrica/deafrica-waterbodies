@@ -9,7 +9,7 @@ import geopandas as gpd
 import pandas as pd
 
 from deafrica_waterbodies.attributes import (
-    add_area_and_perimeter_attributes,
+    add_polygon_properties,
     add_timeseries_attribute,
     assign_unique_ids,
 )
@@ -292,8 +292,8 @@ def generate_polygons(
         os.path.join(output_directory, "area_filtered_raster_polygons.parquet")
     )
 
-    waterbodies_gdf = assign_unique_ids(polygons=area_filtered_raster_polygons)
-    waterbodies_gdf = add_area_and_perimeter_attributes(polygons=waterbodies_gdf)
+    waterbodies_gdf = assign_unique_ids(polygons=area_filtered_raster_polygons, precision=10)
+    waterbodies_gdf = add_polygon_properties(polygons=waterbodies_gdf)
     waterbodies_gdf = add_timeseries_attribute(
         polygons=waterbodies_gdf,
         timeseries_directory=timeseries_directory,
