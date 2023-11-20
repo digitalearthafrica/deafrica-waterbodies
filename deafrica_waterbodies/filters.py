@@ -304,4 +304,7 @@ def filter_by_length(
     _log.info(
         f"Filtered out {len(polygons_gdf) - len(filtered_polygons_gdf)} polygons out of {len(polygons_gdf)} polygons."
     )
+
+    filtered_polygons_gdf = gpd.GeoDataFrame(data=filtered_polygons_gdf)
+
     return filtered_polygons_gdf
