@@ -277,3 +277,31 @@ def remove_polygons_within_polygons(polygons_gdf: gpd.GeoDataFrame) -> gpd.GeoDa
     else:
         _log.info("Found no polygons within polygons.")
         return polygons_gdf
+
+
+def filter_large_polygons(
+    polygons_gdf: gpd.GeoDataFrame, length_threshold_km: float = 150
+) -> gpd.GeoDataFrame:
+    """
+    Filter out polygons whose length is greater than the length threshold.
+
+    Parameters
+    ----------
+    polygons_gdf : gpd.GeoDataFrame
+        Polygons to filter.
+    length_threshold_km : float, optional
+        Length threshold in kilometers by which to filter out large polygons, by default 150
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Polygons with large polygons filtered out.
+    """
+    length_threshold_m = length_threshold_km * 1000
+
+    filtered_polygons_gdf = polygons_gdf[polygons_gdf["length_m"] <= length_threshold_m]
+
+    _log.info(
+        f"Filtered out {len(polygons_gdf) - len(filtered_polygons_gdf)} polygons out of {len(polygons_gdf)} polygons."
+    )
+    return filtered_polygons_gdf
