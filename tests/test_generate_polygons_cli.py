@@ -31,6 +31,7 @@ def test_generate_polygons(runner, capsys: pytest.CaptureFixture):
     output_directory = TEST_OUTPUT_DIRECTORY
     min_polygon_size = 4500
     max_polygon_size = math.inf
+    length_threshold_km = 150
     timeseries_directory = TEST_OUTPUT_DIRECTORY
     file_name_prefix = "waterbodies"
 
@@ -42,13 +43,14 @@ def test_generate_polygons(runner, capsys: pytest.CaptureFixture):
         f"--detection-threshold={detection_threshold}",
         f"--extent-threshold={extent_threshold}",
         f"--min-valid-observations={min_valid_observations}",
-        # f"--raster-processing-plugin-name={raster_processing_plugin_name}",
         f"--min-polygon-size={min_polygon_size}",
         f"--max-polygon-size={max_polygon_size}",
-        f"--output-directory={output_directory}",
+        f"--length-threshold-km={length_threshold_km}",
         "--overwrite",
+        "--no-split-by-wofs-ls-regions",
         f"--timeseries-directory={timeseries_directory}",
         f"--file-name-prefix={file_name_prefix}",
+        f"--output-directory={output_directory}",
     ]
 
     with capsys.disabled() as disabled:  # noqa F841
@@ -56,7 +58,9 @@ def test_generate_polygons(runner, capsys: pytest.CaptureFixture):
 
     assert result.exit_code == 0
 
-    test_waterbodies = gpd.read_file(os.path.join(output_directory, "waterbodies.shp"))
+    test_waterbodies = gpd.read_file(
+        os.path.join(output_directory, "historical_extent", "waterbodies.shp")
+    )
 
     assert len(test_waterbodies) == 2
 
