@@ -29,22 +29,20 @@ def check_tile_intersects_polygons(
     tuple
         Tile id if the extent of the geobox of a tile intersects with the polygons.
     """
-    tile_id = tile[0]
-    tile_extent = tile[1].geobox.extent
 
     if polygons_gdf is not None:
         # Reproject the extent of the geobox of a tile to match the polygons.
-        tile_extent = tile_extent.to_crs(polygons_gdf.crs)
+        tile_extent = tile[1].geobox.extent.to_crs(polygons_gdf.crs)
         # Get the shapely geometry of the reprojected extent of the tile's geobox.
         tile_extent_geom = tile_extent.geom
         # Check if the extent intersects with any of the polygons.
         check_intersection = polygons_gdf.geometry.intersects(tile_extent_geom).any()
         if check_intersection:
-            return tile_id
+            return tile[0]
         else:
             return ()
     else:
-        return tile_id
+        return tile[0]
 
 
 def filter_tiles(
@@ -105,8 +103,7 @@ def tile_wofs_ls_summary_alltime(
     # wofs_ls_summary_alltime grid.
 
     # Regular grid.
-    grid = "africa_30"
-    grid, gridspec = parse_gridspec_with_name(grid)
+    grid, gridspec = parse_gridspec_with_name(s="africa_30")
 
     # Multiply the tile size.
     tile_size = tuple(tile_size_factor * elem for elem in gridspec.tile_size)
