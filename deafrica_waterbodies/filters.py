@@ -279,7 +279,7 @@ def remove_polygons_within_polygons(polygons_gdf: gpd.GeoDataFrame) -> gpd.GeoDa
         return polygons_gdf
 
 
-def filter_large_polygons(
+def filter_by_length(
     polygons_gdf: gpd.GeoDataFrame, length_threshold_km: float = 150
 ) -> gpd.GeoDataFrame:
     """
