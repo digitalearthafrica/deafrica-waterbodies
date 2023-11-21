@@ -352,8 +352,9 @@ def generate_polygons(
     waterbodies_gdf_4326.to_parquet(os.path.join(final_outputs_dir, f"{file_name_prefix}.parquet"))
 
     if group_by_wofs_ls_regions:
-        waterbodies_gdf_4326 = filter_by_length(polygons_gdf=waterbodies_gdf_4326,
-                                                length_threshold_km=length_threshold_km)
+        waterbodies_gdf_4326 = filter_by_length(
+            polygons_gdf=waterbodies_gdf_4326, length_threshold_km=length_threshold_km
+        )
 
         split_by_region_fps = split_polygons_by_region(  # noqa F841
             polygons_gdf=waterbodies_gdf_4326,

@@ -438,12 +438,8 @@ def process_raster_polygons(
         _log.exception(error)
         output_crs = xr_extent.geobox.crs
 
-    # Convert to numpy arrays for image processing.
-    np_detection = xr_detection.to_numpy().astype(int)
-    np_extent = xr_extent.to_numpy().astype(int)
-
     # Remove any objects of size 5 or less, as measured by connectivity=1
-    np_extent_small_removed = remove_small_waterbodies(np_extent, min_size=6)
+    np_extent_small_removed = remove_small_waterbodies(xr_extent.values.astype(int), min_size=6)
 
     # Identify waterbodies to apply segmentation to
     np_extent_segment = select_waterbodies_for_segmentation(np_extent_small_removed, min_size=1000)
@@ -452,7 +448,7 @@ def process_raster_polygons(
     # Create watershed segmentation markers by taking the detection threshold pixels and eroding them by 1
     # Includes removal of any markers smaller than 100 pixels
     segmentation_markers = generate_segmentation_markers(
-        np_detection, erosion_radius=1, min_size=100
+        xr_detection.values.astype(int), erosion_radius=1, min_size=100
     )
 
     # Run segmentation
@@ -463,7 +459,7 @@ def process_raster_polygons(
 
     # Only keep extent areas that contain a detection pixel
     np_combined_extent_contains_detection = confirm_extent_contains_detection(
-        np_combined_extent, np_detection
+        np_combined_extent, xr_detection.values.astype(int)
     )
 
     # Relabel and remove small objects
