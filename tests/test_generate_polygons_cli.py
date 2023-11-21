@@ -47,7 +47,7 @@ def test_generate_polygons(runner, capsys: pytest.CaptureFixture):
         f"--max-polygon-size={max_polygon_size}",
         f"--length-threshold-km={length_threshold_km}",
         "--overwrite",
-        "--no-split-by-wofs-ls-regions",
+        "--not-group-by-wofs-ls-regions",
         f"--timeseries-directory={timeseries_directory}",
         f"--file-name-prefix={file_name_prefix}",
         f"--output-directory={output_directory}",

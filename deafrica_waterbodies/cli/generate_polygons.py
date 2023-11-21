@@ -103,12 +103,6 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
     help="Maximum area in m2 of the waterbody polygons to be included.",
 )
 @click.option(
-    "--length-threshold-km",
-    default=150,
-    show_default=True,
-    help="Length threshold in kilometers by which to filter out large polygons.",
-)
-@click.option(
     "--output-directory",
     type=str,
     help="Directory to write the water body polygons to.",
@@ -125,9 +119,15 @@ from deafrica_waterbodies.tiling import get_wofs_ls_summary_alltime_tiles
     help="File name for the final output",
 )
 @click.option(
-    "--split-by-wofs-ls-regions/--no-split-by-wofs-ls-regions",
+    "--group-by-wofs-ls-regions/--not-group-by-wofs-ls-regions",
     default=True,
     help="Group waterbody polygons by wofs_ls regions.",
+)
+@click.option(
+    "--length-threshold-km",
+    default=150,
+    show_default=True,
+    help="Length threshold in kilometers by which to filter out large polygons before grouping polygons by wofs_ls region.",
 )
 def generate_polygons(
     verbose,
@@ -142,11 +142,11 @@ def generate_polygons(
     overwrite,
     min_polygon_size,
     max_polygon_size,
-    length_threshold_km,
     output_directory,
     timeseries_directory,
     file_name_prefix,
-    split_by_wofs_ls_regions,
+    group_by_wofs_ls_regions,
+    length_threshold_km,
 ):
     """
     Generate water body polygons from WOfS All Time Summary data
@@ -196,7 +196,7 @@ def generate_polygons(
         fs.mkdirs(final_outputs_dir, exist_ok=True)
         _log.info(f"Created directory {final_outputs_dir}")
 
-    if split_by_wofs_ls_regions:
+    if group_by_wofs_ls_regions:
         if not check_dir_exists(polygons_split_by_region_dir):
             fs.mkdirs(polygons_split_by_region_dir, exist_ok=True)
             _log.info(f"Created directory {polygons_split_by_region_dir}")
@@ -333,10 +333,6 @@ def generate_polygons(
 
     waterbodies_gdf = add_polygon_properties(polygons=waterbodies_gdf)
 
-    waterbodies_gdf = filter_by_length(
-        polygons_gdf=waterbodies_gdf, length_threshold_km=length_threshold_km
-    )
-
     waterbodies_gdf = add_timeseries_attribute(
         polygons=waterbodies_gdf,
         timeseries_directory=timeseries_directory,
@@ -355,7 +351,10 @@ def generate_polygons(
 
     waterbodies_gdf_4326.to_parquet(os.path.join(final_outputs_dir, f"{file_name_prefix}.parquet"))
 
-    if split_by_wofs_ls_regions:
+    if group_by_wofs_ls_regions:
+        waterbodies_gdf_4326 = filter_by_length(polygons_gdf=waterbodies_gdf_4326,
+                                                length_threshold_km=length_threshold_km)
+
         split_by_region_fps = split_polygons_by_region(  # noqa F841
             polygons_gdf=waterbodies_gdf_4326,
             output_directory=polygons_split_by_region_dir,
