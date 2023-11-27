@@ -3,10 +3,9 @@ name: Test
 on: [push]
 
 env:
-  ORG: geoscienceaustralia
-  IMAGE: dea-waterbodies
-  METADATA_CATALOG: https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/a4f39b485b33608a016032d9987251881fec4b6f/workspaces/sandbox-metadata.yaml
-  PRODUCT_CATALOG: https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/a4f39b485b33608a016032d9987251881fec4b6f/workspaces/sandbox-products.csv
+  ORG: digitalearthafrica
+  IMAGE: deafrica-waterbodies
+  PRODUCT_CATALOG: https://raw.githubusercontent.com/digitalearthafrica/config/master/prod/products_prod.csv
 
 jobs:
   test:
@@ -14,26 +13,23 @@ jobs:
     
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Pre-pull layers
-      run: docker-compose pull
-      
+      uses: actions/checkout@v4.0.0
       
     - name: Activate Docker cache
-      uses: satackey/action-docker-layer-caching@v0.0.8
+      uses: satackey/action-docker-layer-caching@v0.0.11  
       # Ignore the failure of a step and avoid terminating the job.
       continue-on-error: true
 
-    - name: Build dea-waterbodies image
+    - name: Setup deafrica-waterbodies test environment
       run: |
-        docker-compose build
+          make test-env
     
-    - name: Test dea-waterbodies image
+    - name: Run deafrica-waterbodies test
       run: |
-          docker-compose up -d
-          ./setup_test_datacube.sh
-          docker-compose exec -T waterbodies bash -c "pytest ."
-          docker-compose down
-      
+          make run-tests
+          make clean
     
+    - name: Clean deafrica-waterbodies image
+      run: |
+          (echo y) | docker container prune
+          (echo y) | docker image prune

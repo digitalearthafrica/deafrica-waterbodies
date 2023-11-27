@@ -25,9 +25,11 @@ classifiers=[
 ]
 requires-python = ">=3.6.0"
 dependencies = [
-    'boto3',
+    'aiobotocore[awscli,boto3]',
+    # 'boto3',
+    # 'botocore',
+    # 'types-aiobotocore[essential]',
     'boto3-stubs[sqs,s3]',
-    'botocore',
     'click',
     'datacube',
     'deafrica-tools >= 2.1.2',
@@ -36,6 +38,7 @@ dependencies = [
     'geopandas',
     'numpy',
     'odc-dscache',
+    'odc-stats',
     'pandas',
     'python-dateutil',
     'python-geohash',

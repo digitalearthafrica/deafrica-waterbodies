@@ -1,10 +1,7 @@
 import click
-from datacube.ui.click import parse_expressions
 
 from deafrica_waterbodies.cli.logs import logging_setup
-from deafrica_waterbodies.waterbodies.timeseries.make_timeseries import (
-    generate_timeseries_from_wofs_ls,
-)
+from deafrica_waterbodies.make_timeseries import generate_timeseries_from_wofs_ls
 
 
 @click.command(
@@ -14,7 +11,6 @@ from deafrica_waterbodies.waterbodies.timeseries.make_timeseries import (
 @click.option(
     "--waterbodies-vector-file",
     type=click.Path(),
-    default=None,
     help="REQUIRED. Path to the waterbody polygons vector file you "
     "want to run the time series generation for.",
 )
@@ -40,20 +36,11 @@ from deafrica_waterbodies.waterbodies.timeseries.make_timeseries import (
     "then --start-date and --end-date must also be specified.",
 )
 @click.option(
-    "--start-date",
+    "--temporal-range",
     type=str,
     default=None,
-    help="Date string. E.g. 2019-01-01. "
-    "The start date for the waterbody timeseries query. If --start-date "
-    "is provided --end-date must also be provided.",
-)
-@click.option(
-    "--end-date",
-    type=str,
-    default=None,
-    help="Date string. E.g. 2019-12-01. "
-    "The end date for the waterbody timeseries query. If --end-date is "
-    "provided --start-date must also be provided.",
+    help="Time range to generate the timeseries for, if `time_span` is set to"
+    "`custom`. Example '2020-05--P1M' for the month of May 2020, by default",
 )
 @click.option(
     "--missing-only/--not-missing-only",
@@ -63,14 +50,6 @@ from deafrica_waterbodies.waterbodies.timeseries.make_timeseries import (
     "in the --output-directory directory. The default option is to run "
     "every waterbody polygon in the --waterbodies-vector-file file, and overwrite "
     "any existing csv files.",
-)
-@click.option(
-    "--include-uncertainity/--do-not-include-uncertainity",
-    default=True,
-    help="Option to include uncertainities in the output timeseries."
-    "If you specify --include-uncertainity then you will only "
-    "filter out timesteps with 100% invalid pixels. Else you will "
-    "filter out timesteps with more than 10% invalid pixels",
 )
 @click.option(
     "--subset-polygon-ids",
@@ -83,10 +62,8 @@ def generate_timeseries(
     use_id,
     output_directory,
     time_span,
-    start_date,
-    end_date,
+    temporal_range,
     missing_only,
-    include_uncertainity,
     subset_polygon_ids,
     verbose,
 ):
@@ -95,14 +72,11 @@ def generate_timeseries(
     """
     logging_setup(verbose=verbose)
 
-    # Convert strings to datetime.
-    if time_span == "custom":
-        time_expression = parse_expressions(f"time in [{start_date}, {end_date}]")
-        start_date_dt = time_expression["time"].begin
-        end_date_dt = time_expression["time"].end
+    # Parse string to list.
+    if subset_polygon_ids is not None:
+        subset_polygon_ids = subset_polygon_ids.split(",")
     else:
-        start_date_dt = None
-        end_date_dt = None
+        subset_polygon_ids = []
 
     generate_timeseries_from_wofs_ls(
         waterbodies_vector_file=waterbodies_vector_file,
@@ -110,8 +84,6 @@ def generate_timeseries(
         use_id=use_id,
         missing_only=missing_only,
         time_span=time_span,
-        start_date=start_date_dt,
-        end_date=end_date_dt,
+        temporal_range=temporal_range,
         subset_polygons_ids=subset_polygon_ids,
-        include_uncertainity=include_uncertainity,
     )
