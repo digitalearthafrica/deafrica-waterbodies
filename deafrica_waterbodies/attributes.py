@@ -48,7 +48,9 @@ def assign_unique_ids(polygons: gpd.GeoDataFrame, precision: int = 10) -> gpd.Ge
     # Make an arbitrary numerical ID for each polygon. We will first sort the dataframe by geohash
     # so that polygons close to each other are numbered similarly.
     polygons_with_unique_ids_sorted = polygons_with_unique_ids.sort_values(by=["UID"]).reset_index()
-    polygons_with_unique_ids_sorted["WB_ID"] = polygons_with_unique_ids_sorted.index
+    polygons_with_unique_ids_sorted["WB_ID"] = polygons_with_unique_ids_sorted.index + 1
+
+    assert polygons_with_unique_ids_sorted["WB_ID"].min() > 0
 
     # The step above creates an 'index' column, which we don't actually want, so drop it.
     polygons_with_unique_ids_sorted.drop(columns=["index"], inplace=True)
